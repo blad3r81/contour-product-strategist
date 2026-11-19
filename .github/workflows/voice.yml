@@ -1,0 +1,29 @@
+name: Речь на независимой Windows-машине
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  voice:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Установка изолированной речи и проверка весов
+        shell: pwsh
+        run: ./voice/setup.ps1 -AiRoot "$env:RUNNER_TEMP/contour-voice" -PythonPath (Get-Command python).Source -AcceptSileroLicense
+      - name: Запуск процессов речи
+        shell: pwsh
+        run: ./voice/start.ps1 -AiRoot "$env:RUNNER_TEMP/contour-voice"
+      - name: Синтез, разговорное распознавание и диктовка
+        run: node agent/verify-speech.mjs
+      - name: Диагностика при ошибке
+        if: failure()
+        shell: pwsh
+        run: Get-ChildItem "$env:RUNNER_TEMP/contour-voice" -Filter '*.log' | ForEach-Object { Write-Output $_.Name; Get-Content $_.FullName -Tail 25 }

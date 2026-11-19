@@ -1,9 +1,13 @@
 {
-  "generatedAt": "2026-11-19T15:15:34.936Z",
+  "generatedAt": "2026-11-19T15:19:24.163Z",
   "files": [
     {
       "path": ".github/workflows/check.yml",
       "bytes": 857
+    },
+    {
+      "path": ".github/workflows/voice.yml",
+      "bytes": 1315
     },
     {
       "path": ".gitignore",
@@ -64,6 +68,10 @@
     {
       "path": "agent/verify-portability.mjs",
       "bytes": 1567
+    },
+    {
+      "path": "agent/verify-speech.mjs",
+      "bytes": 4063
     },
     {
       "path": "agent/verify-workflow.mjs",
