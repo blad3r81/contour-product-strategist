@@ -19,5 +19,6 @@ jobs:
       - run: node agent/verify-analysis.mjs
       - run: node agent/verify-workflow.mjs
       - run: node agent/verify-monitor.mjs
+      - run: node agent/verify-config.mjs
       # Actual model and voice acceptance needs an API key and downloaded speech weights.
       # These are intentionally not placed in public CI or committed fixtures.

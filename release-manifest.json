@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-11-19T15:19:24.163Z",
+  "generatedAt": "2026-11-19T15:25:01.621Z",
   "files": [
     {
       "path": ".github/workflows/check.yml",
-      "bytes": 857
+      "bytes": 899
     },
     {
       "path": ".github/workflows/voice.yml",
-      "bytes": 1315
+      "bytes": 1364
     },
     {
       "path": ".gitignore",
@@ -23,7 +23,7 @@
     },
     {
       "path": "README.md",
-      "bytes": 33348
+      "bytes": 36396
     },
     {
       "path": "agent/cli.mjs",
@@ -60,6 +60,10 @@
     {
       "path": "agent/verify-analysis.mjs",
       "bytes": 7109
+    },
+    {
+      "path": "agent/verify-config.mjs",
+      "bytes": 848
     },
     {
       "path": "agent/verify-monitor.mjs",
@@ -363,7 +367,7 @@
     },
     {
       "path": "server/routes.js",
-      "bytes": 53768
+      "bytes": 54067
     },
     {
       "path": "server/start.mjs",

@@ -142,6 +142,7 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) 
   const started = Date.now();
   const prompt = typeof data.prompt === 'string' ? data.prompt.trim() : '';
   if (!prompt || prompt.length > 80000) throw Error('Введите запрос до 80 000 символов.');
+  if (process.env.CONTOUR_LLM_BACKEND === 'gigachat' && !usesGigaChat()) throw Error('Для выбранного GigaChat не настроен GIGACHAT_AUTH_KEY. Укажите ключ API в локальной конфигурации по README и перезапустите сервер.');
   if (!local && !hasOnlineModel()) throw Error('Онлайн-модель ещё не настроена.');
   const online = usesOnlineModel(local);
   let saved;

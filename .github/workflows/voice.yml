@@ -18,11 +18,12 @@ jobs:
       - name: Установка изолированной речи и проверка весов
         shell: pwsh
         run: ./voice/setup.ps1 -AiRoot "$env:RUNNER_TEMP/contour-voice" -PythonPath (Get-Command python).Source -AcceptSileroLicense
-      - name: Запуск процессов речи
+      - name: Запуск речи и проверка синтеза, распознавания и диктовки
         shell: pwsh
-        run: ./voice/start.ps1 -AiRoot "$env:RUNNER_TEMP/contour-voice"
-      - name: Синтез, разговорное распознавание и диктовка
-        run: node agent/verify-speech.mjs
+        run: |
+          ./voice/start.ps1 -AiRoot "$env:RUNNER_TEMP/contour-voice"
+          node agent/verify-speech.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Speech verification failed' }
       - name: Диагностика при ошибке
         if: failure()
         shell: pwsh
