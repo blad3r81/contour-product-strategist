@@ -41,8 +41,8 @@ function verifyCallbackThreshold(prompt, decision) {
   };
 }
 
-function separateCustomerCopy(text, sources) {
-  const marked = /\[СООБЩЕНИЕ_КЛИЕНТУ\]([\s\S]*?)\[\/СООБЩЕНИЕ_КЛИЕНТУ\]/g;
+export function separateCustomerCopy(text, sources) {
+  const marked = /\[СООБ[А-ЯЁ_]*КЛИЕНТУ\]([\s\S]*?)\[\/СООБ[А-ЯЁ_]*КЛИЕНТУ\]/g;
   const normalize = value => value.toLowerCase().replace(/[\s«»"“”]+/g, ' ').replace(/[.?!]+$/g, '').trim();
   const publicText = sources.filter(source => source.url && source.text && !source.error).map(source => ({ id: source.id, text: normalize(source.text) }));
   let rejected = false;
@@ -169,9 +169,9 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) 
   const specialist = /интервью|респондент|интерфейс|ux|юзабилит/i.test(prompt);
   const asksCapabilities = spoken && !files.length && /^(?:скажи[, ]+)?(?:что|какие?|как).{0,45}\s(?:можешь|умеешь)(?=[\s,?.!]|$)/iu.test(prompt) &&
     !/проведи|подготовь|разбери|проанализируй|сравни\s+три/i.test(prompt);
-  const analysis = (research || detailed || specialist) && !asksCapabilities;
-  const quickSpoken = spoken && !analysis;
   const briefing = !files.length && !existing.length && !/https?:\/\//i.test(prompt) && /какие (?:вводные|данные)|что (?:нужно|важно) уточнить|уточняющие вопросы/i.test(prompt);
+  const analysis = (research || detailed || specialist) && !asksCapabilities && !briefing;
+  const quickSpoken = spoken && !analysis;
   if (research || existing.length || /https?:\/\//i.test(prompt) || files.length) onProgress?.('Собираю материалы…');
   const discovered = research ? await findProjectSources(prompt) : [];
   const sources = await gatherLinks(prompt, [...existing, ...discovered], signal);
@@ -297,19 +297,19 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) 
       charts,
     };
   }
-  const structured = !asksCapabilities && !revisiting && needsStrategy(prompt);
+  const structured = !briefing && !asksCapabilities && !revisiting && needsStrategy(prompt);
   const plan = structured ? measurementPlan(ratios, prompt, sources) : undefined;
   let system = quickSpoken ? spokenInstructions : await instructions();
   if (briefing) system += '\nСейчас только постановка задачи. Задай не больше трёх коротких вопросов о метрике, доступных данных и ограничениях. Не делай обзор рынка, не перечисляй варианты и не выдумывай текущие обстоятельства.';
   if (selectingTopic && quickSpoken) system += '\n' + topicInstructions;
   if (asksCapabilities) system += '\nОбъясни возможности обычными словами. Приведи один пример задачи: удержание, выбор аудитории или запуск продукта. Предложи назвать продукт или описать проблему. Для начала работы не требуются идентификаторы, номера и ссылки.';
   const discovery = !sources.some(source => !source.error) && (analysis || /удерж|отток|запуск|аудитори|воронк|продукт|пользовател/i.test(prompt));
-  if (discovery) {
+  if (discovery && !briefing) {
     const method = discoveryMethods.find(([pattern]) => pattern.test(prompt))?.[1] || 'Назови доступную первую проверку и какой результат изменит решение.';
     system += `\nПодтверждающие материалы ещё не приложены. Используй следующий метод как основу первых двух предложений ответа: ${method} Не придумывай проверенные факты, ссылки, цифры и результаты.`;
   }
   if (specialist) system += '\n\n' + await readFile(new URL('../agent/methods.md', import.meta.url), 'utf8');
-  if (research || detailed) system += '\nДля объёмной задачи уложи выводы в шесть компактных блоков: рекомендация; факты и пробелы; три варианта и возражения; продукт и экономика; коммуникация; план проверки. Привязывай числа учебной таблицы к конкретному ID файла, возможности продукта — к конкретному ID страницы.';
+  if ((research || detailed) && !briefing && !asksCapabilities) system += '\nДля объёмной задачи уложи выводы в шесть компактных блоков: рекомендация; факты и пробелы; три варианта и возражения; продукт и экономика; коммуникация; план проверки. Привязывай числа учебной таблицы к конкретному ID файла, возможности продукта — к конкретному ID страницы.';
   if (spoken && analysis && !online) system += '\nПиши короткими пунктами без вступления. При выборе стратегии дай ровно три разных направления: оставить текущий подход, закрыть направление, провести ограниченный пилот. У каждого назови сильное возражение. Оставь место для плана проверки в конце.';
   const educational = analysis && sources.some(source => /учебн[ыао].{0,55}(?:данн|разбор|замер|кейс)|вымышлен|синтетическ/i.test(source.text || ''));
   if (educational) system += '\nВ материалах есть учебные данные. Любой выбор коммерческого направления на их основе оставь условным до проверки. Не объясняй изменение причинным эффектом без подходящей базы сравнения. Сохранение текущего положения должно сохранять текущую практику; прекращение продвижения рассматривай отдельно.';

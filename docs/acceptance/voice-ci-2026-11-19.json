@@ -1,0 +1,40 @@
+{
+  "checkedAt": "2026-11-19T15:30:29.747Z",
+  "url": "https://github.com/blad3r81/contour-product-strategist/actions/runs/44554553492",
+  "testedCommit": "a98069159771e6f50f8aca6965072c705abf816b",
+  "environment": "Independent GitHub-hosted windows-latest runner, fresh Python 3.11 virtual environments and downloaded weights",
+  "result": {
+    "ok": true,
+    "reference": "Здорово. Как проверить удержание пользователей цифрового сервиса?",
+    "conversation": "здорово как проверить удержание пользователя цифрового сервиса",
+    "dictation": "Здорово, как проверить удержание пользователей цифрового сервиса.",
+    "samples": [
+      {
+        "action": "speak",
+        "seconds": 0.14,
+        "engine": "silero",
+        "sampleRate": 48000
+      },
+      {
+        "action": "transcribe",
+        "seconds": 0.11,
+        "engine": "zipformer"
+      },
+      {
+        "action": "transcribe",
+        "seconds": 2.23
+      }
+    ],
+    "scope": "Синтетическая запись через реальные речевые модели. Этот тест не измеряет микрофон, браузерное воспроизведение или качество стратегического ответа."
+  },
+  "previousFailure": {
+    "url": "https://github.com/blad3r81/contour-product-strategist/actions/runs/44553490351",
+    "symptom": "Speech processes unavailable after starting in a separate workflow step; both log files empty",
+    "fix": "Start workers and run the test in the same workflow step",
+    "retry": "success"
+  },
+  "limitations": [
+    "Synthetic recording, no physical microphone or browser playback",
+    "No GigaChat key used or provided to this workflow"
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19T15:25:01.621Z",
+  "generatedAt": "2026-11-19T15:30:31.833Z",
   "files": [
     {
       "path": ".github/workflows/check.yml",
@@ -23,7 +23,7 @@
     },
     {
       "path": "README.md",
-      "bytes": 36396
+      "bytes": 38509
     },
     {
       "path": "agent/cli.mjs",
@@ -63,7 +63,7 @@
     },
     {
       "path": "agent/verify-config.mjs",
-      "bytes": 848
+      "bytes": 1131
     },
     {
       "path": "agent/verify-monitor.mjs",
@@ -92,6 +92,10 @@
     {
       "path": "docs/acceptance/github-check-2026-11-19.json",
       "bytes": 13513
+    },
+    {
+      "path": "docs/acceptance/voice-ci-2026-11-19.json",
+      "bytes": 1888
     },
     {
       "path": "docs/screenshots/dialog.jpg",
@@ -367,7 +371,7 @@
     },
     {
       "path": "server/routes.js",
-      "bytes": 54067
+      "bytes": 54149
     },
     {
       "path": "server/start.mjs",
