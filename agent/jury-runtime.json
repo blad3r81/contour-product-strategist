@@ -1,0 +1,62 @@
+{
+  "asrPackages": {
+    "webrtcvad-wheels": "2.0.14",
+    "transcribe-cpp": "0.4.2",
+    "numpy": "2.4.6",
+    "sherpa-onnx": "2.0.1",
+    "soundfile": "0.14.0"
+  },
+  "ttsPackages": {
+    "numpy": "2.4.6",
+    "torch": "2.15.0+cpu",
+    "soundfile": "0.14.0"
+  },
+  "limitations": [
+    "Observed Windows environment, clean installation not yet verified",
+    "GigaChat access and quota required",
+    "Silero model license must be checked for intended use"
+  ],
+  "files": [
+    {
+      "bytes": 70876638,
+      "path": "sherpa/sherpa-onnx-zipformer-ru-int8-2025-04-20/encoder.int8.onnx",
+      "component": "conversation-asr",
+      "sha256": "eb6c12fbad810d5bc3e427802e604604c69b5943a91feebc43424dd09d9ec407"
+    },
+    {
+      "bytes": 2093080,
+      "path": "sherpa/sherpa-onnx-zipformer-ru-int8-2025-04-20/decoder.onnx",
+      "component": "conversation-asr",
+      "sha256": "dcbe1ffa0211e77ca6d3a80164df13fbda3ec00e47d12b9f449f89572df12136"
+    },
+    {
+      "bytes": 259417,
+      "path": "sherpa/sherpa-onnx-zipformer-ru-int8-2025-04-20/joiner.int8.onnx",
+      "component": "conversation-asr",
+      "sha256": "93f2e1d12b78d53e7802f1606488c14bb3d764b15fadf5ef6c022f6ba1fa40f7"
+    },
+    {
+      "bytes": 6388,
+      "path": "sherpa/sherpa-onnx-zipformer-ru-int8-2025-04-20/tokens.txt",
+      "component": "conversation-asr",
+      "sha256": "93bbbc0bae6b78c0bbb743d4aa9fded3bb5ff3aac5f0200e3a769a5a05e0fdf6"
+    },
+    {
+      "bytes": 850423456,
+      "path": "qwen-asr/Qwen3-ASR-0.6B-Q8_0.gguf",
+      "component": "dictation-asr",
+      "sha256": "f081b2d5e23bd669d92cc331d722a8a0681943b8e6f34b48996fd5c319b5acd8"
+    },
+    {
+      "bytes": 147664410,
+      "path": "silero/v5_6_ru.pt",
+      "component": "tts",
+      "sha256": "04cc9b1d08ce38bcaa9d02c488d80d3e6806d17f7eaa7c95982f36a3cbf50b2e"
+    }
+  ],
+  "ttsSampleRate": 48000,
+  "profile": "jury-current-cpu-2026-11-19",
+  "textModel": "GigaChat-3-Ultra",
+  "python": "3.11",
+  "ttsSpeaker": "eugene"
+}

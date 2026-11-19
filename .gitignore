@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env*
+
+.vercel
+.agents/
+__pycache__/
+cases/
+models/
+.venv/
+runtime/
+*.part

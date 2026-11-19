@@ -1,0 +1,5 @@
+numpy==2.4.6
+soundfile==0.14.0
+sherpa-onnx==2.0.1
+webrtcvad-wheels==2.0.14
+transcribe-cpp==0.4.2

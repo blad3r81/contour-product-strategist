@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#241936"/>
+  <g fill="none" stroke="#705386" stroke-width="2">
+    <path d="M60 60H580M60 120H580M60 180H580M60 240H580M60 300H580" opacity=".4"/>
+    <path d="M176 180H278Q303 180 325 157L374 106H473M176 180H473M176 180H278Q303 180 325 203L374 254H473"/>
+  </g>
+  <path d="M176 180H473" stroke="#9debb6" stroke-width="4"/>
+  <g fill="#241936" stroke="#9debb6" stroke-width="3"><circle cx="176" cy="180" r="13"/><circle cx="473" cy="180" r="13"/></g>
+  <g fill="#ad95c2"><circle cx="473" cy="106" r="7"/><circle cx="473" cy="254" r="7"/></g>
+  <g fill="#f3edf6" font-family="system-ui, sans-serif" font-size="17"><text x="60" y="188">Охват</text><text x="498" y="112">Запуск</text><text x="498" y="186">Пилот</text><text x="498" y="260">Пауза</text></g>
+</svg>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#111814">
+    <title>Контур решения</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="hero-video-buffer" hidden aria-hidden="true">
+      <video id="hero-video" muted loop playsinline preload="auto"
+        poster="/megafon/hero-poster-hd.jpg" data-src="/megafon/hero-reel-1080.mp4"></video>
+    </div>
+    <script>
+      const heroVideo = document.getElementById('hero-video');
+      if (matchMedia('(max-width: 720px)').matches) {
+        heroVideo.dataset.src = '/megafon/hero-reel-720.mp4';
+      }
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches &&
+          (location.pathname === '/' || !location.pathname.startsWith('/projects/'))) {
+        heroVideo.src = heroVideo.dataset.src;
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+

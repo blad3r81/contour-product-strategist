@@ -1,0 +1,7 @@
+[
+  {"url":"https://vats.megafon.ru/missed_calls_control","terms":["пропущен","перезвон","виртуальн","ватс"]},
+  {"url":"https://vats.megafon.ru/missed_calls","terms":["уведомлен","напоминан","эскалац","пропущен","перезвон"]},
+  {"url":"https://vats.megafon.ru/reports_groups_missing","terms":["метрик","отчет","отчёт","скорост","перезвон","ватс","виртуальн"]},
+  {"url":"https://vats.megafon.ru/speech_analytics","terms":["речев","расшифровк","словар","аналитик звонков"]},
+  {"url":"https://shop.megafon.ru/connect/tariffs/508722","terms":["семейн","мегасемь","семьи"]}
+]
