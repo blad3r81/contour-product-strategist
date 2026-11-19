@@ -1,0 +1,327 @@
+{
+  "checkedAt": "2026-11-19T15:13:46.788Z",
+  "sourceRepository": "https://github.com/blad3r81/contour-product-strategist",
+  "testedCommit": "fe679ef2aa9f108b8083e3a17b84899bda12df1c",
+  "environment": "Fresh Git clone and isolated Python environments on author Windows machine; not a second physical computer",
+  "ci": {
+    "url": "https://github.com/blad3r81/contour-product-strategist/actions/runs/44551488998",
+    "windows": "success",
+    "ubuntu": "success",
+    "scope": "Build and deterministic tools; no LLM key or live microphone in CI"
+  },
+  "checks": {
+    "hasReport": true,
+    "sourcesRead": 4,
+    "inaccessibleSourceVisible": true,
+    "plan": true,
+    "calculation": true,
+    "graph": true,
+    "options": true,
+    "sectionsComplete": true,
+    "proposal": true,
+    "memory": true,
+    "threshold": true,
+    "priorChoiceKept": true
+  },
+  "events": [
+    {
+      "action": "chat",
+      "seconds": 3.157,
+      "trace": {
+        "seconds": 3.1,
+        "checked": 0,
+        "inaccessible": 0,
+        "catalog": 0,
+        "graphCount": 0,
+        "local": false,
+        "timings": {
+          "materialsMs": 1,
+          "modelMs": 3087
+        },
+        "actions": [],
+        "cost": {
+          "api": "unknown",
+          "humanReview": "not_measured"
+        }
+      },
+      "usage": {
+        "prompt_tokens": 721,
+        "completion_tokens": 141,
+        "total_tokens": 862,
+        "precached_prompt_tokens": 0
+      }
+    },
+    {
+      "action": "chat",
+      "seconds": 29.829,
+      "trace": {
+        "seconds": 29.8,
+        "checked": 4,
+        "inaccessible": 1,
+        "catalog": 0,
+        "graphCount": 1,
+        "local": false,
+        "timings": {
+          "materialsMs": 7926,
+          "modelMs": 15304,
+          "reviewMs": 6588
+        },
+        "actions": [
+          {
+            "tool": "read_url",
+            "source": "И1",
+            "status": "done",
+            "detail": "Материал прочитан ограниченным фрагментом."
+          },
+          {
+            "tool": "read_url",
+            "source": "И2",
+            "status": "error",
+            "detail": "Адрес не является публичным."
+          },
+          {
+            "tool": "read_document",
+            "source": "Ф1",
+            "status": "done",
+            "detail": "Материал прочитан ограниченным фрагментом."
+          },
+          {
+            "tool": "read_document",
+            "source": "Ф2",
+            "status": "done",
+            "detail": "Материал прочитан ограниченным фрагментом."
+          },
+          {
+            "tool": "read_document",
+            "source": "Ф3",
+            "status": "done",
+            "detail": "Материал прочитан ограниченным фрагментом."
+          },
+          {
+            "tool": "research_plan",
+            "status": "done",
+            "detail": "Модель выбрала вопросы исследования и доступные проверки.",
+            "questions": [
+              {
+                "question": "Какая доля отказов на этапе заполнения формы вызвана именно отсутствием примера заполнения и подсказок, а не отсутствием интеграций или выбора поставщика? (опрос/тегирование сессий/тепловая карта поля",
+                "source": "Ф3"
+              },
+              {
+                "question": "Каков вклад второго источника привлечения в активацию за 7 дней и какова его стоимость привлечения на одну активированную компанию по сравнению с основным источником? (разделение когорт по источнику",
+                "source": "Ф2"
+              }
+            ]
+          },
+          {
+            "tool": "calculate_ratio",
+            "source": "Ф2",
+            "status": "done",
+            "detail": "[Ф2] строка данных 1, столбцы «Компании с первой корректной заявкой», «Зарегистрированные компании», «Активация за 7 дней (%)»: 48/120 = 40%\n[Ф2] строка данных 2, столбцы «Компании с первой корректной заявкой», «Зарегистрированные компании», «Активация за 7 дней (%)»: 45/150 = 30%\nИзменение — -10 п. п. Причина изменения по двум строкам не установлена.",
+            "mapping": {
+              "numerator": "Компании с первой корректной заявкой",
+              "denominator": "Зарегистрированные компании",
+              "rate": "Активация за 7 дней (%)",
+              "source": "Ф2",
+              "reason": "Проверка соответствия исходным числам: 48/120=40% и 45/150=30% для принятия решения о фокусе на активации."
+            }
+          },
+          {
+            "tool": "audit_strategy",
+            "status": "done",
+            "detail": "В формулировке не указано ожидаемое направление изменения, что требуется по правилам."
+          },
+          {
+            "tool": "audit_strategy",
+            "status": "done",
+            "detail": "Сравнение не описывает будущий одновременный контроль, а опирается на прошлые когорты, что не соответствует требованию."
+          },
+          {
+            "tool": "audit_strategy",
+            "status": "done",
+            "detail": "Формулировка не связывает пользу с доходом или маржой и затратами, а лишь констатирует неизвестность входов."
+          },
+          {
+            "tool": "audit_strategy",
+            "status": "done",
+            "detail": "Отсутствует указание на реальную проверку понимания сообщения пользователем и роли канала."
+          },
+          {
+            "tool": "audit_strategy",
+            "status": "done",
+            "detail": "Формулировка не объясняет ценность для пользователя и не опирается на ограничения по изменениям."
+          },
+          {
+            "tool": "audit_strategy",
+            "status": "done",
+            "detail": "Формулировка не связывает барьер с конкретным риском для метрики активации."
+          },
+          {
+            "tool": "strategy_section",
+            "status": "done",
+            "detail": "Сопоставление вариантов, продуктовая и коммуникационная стратегии, план проверки",
+            "seconds": 15.304
+          }
+        ],
+        "cost": {
+          "api": "unknown",
+          "humanReview": "not_measured"
+        }
+      },
+      "usage": {
+        "prompt_tokens": 5566,
+        "completion_tokens": 1932,
+        "total_tokens": 7498,
+        "precached_prompt_tokens": 0
+      },
+      "validation": {
+        "missing": [],
+        "unsupportedNumbers": [],
+        "verifiedExcerpts": 1,
+        "measurements": 1,
+        "status": "proposal"
+      }
+    },
+    {
+      "action": "case",
+      "seconds": 0.014
+    },
+    {
+      "action": "case",
+      "seconds": 0.014
+    },
+    {
+      "action": "chat",
+      "seconds": 0.009,
+      "trace": {
+        "seconds": 0,
+        "checked": 1,
+        "inaccessible": 0,
+        "catalog": 0,
+        "graphCount": 0,
+        "local": false,
+        "actions": [
+          {
+            "tool": "read_document",
+            "source": "Ф1",
+            "status": "done",
+            "detail": "Материал прочитан ограниченным фрагментом."
+          },
+          {
+            "tool": "calculate_ratio",
+            "source": "Ф1",
+            "status": "done",
+            "detail": "[Ф1] строка данных 1, столбцы «Компании с первой корректной заявкой», «Зарегистрированные компании», «Активация за 7 дней (%)»: 28/100 = 28%",
+            "mapping": {
+              "numerator": "Компании с первой корректной заявкой",
+              "denominator": "Зарегистрированные компании",
+              "rate": "Активация за 7 дней (%)",
+              "source": "Ф1",
+              "reason": "Проверка соответствия исходным числам."
+            }
+          },
+          {
+            "tool": "review_decision",
+            "status": "done",
+            "detail": "Активация за 7 дней, [Ф1], строка данных 1: 28 / 100 = 28%. Порог пересмотра — ниже 30%. Условие пересмотра сработало."
+          }
+        ],
+        "resumedFrom": "2026-11-19T15-12-04.732Z-a99fd80f-3d5b-4d35-8081-e64235873958.json"
+      }
+    },
+    {
+      "action": "case",
+      "seconds": 0.012
+    }
+  ],
+  "voice": {
+    "reference": "Здорово. Как проверить активацию компаний после изменения формы?",
+    "recognized": "здорово как проверить активацию компании после изменения формы",
+    "answer": "Чтобы проверить активацию компании после изменения формы, сравни долю новых компаний, отправивших первую корректную заявку за 7 дней, в пилотной и контрольной группах. Сейчас у пилота 28% (28/100), контрольной группы пока нет — собери её на том же канале и жди полного семидневного окна. Если в пилоте активация останется ниже 30% или нагрузка поддержки вырастет, масштабировать не стоит.",
+    "samples": [
+      {
+        "action": "speak",
+        "seconds": 3.992,
+        "ok": true,
+        "engine": "silero",
+        "sampleRate": 48000
+      },
+      {
+        "action": "transcribe",
+        "seconds": 0.886,
+        "ok": true,
+        "engine": "zipformer"
+      },
+      {
+        "action": "chat",
+        "seconds": 2.799,
+        "ok": true
+      },
+      {
+        "action": "speak",
+        "seconds": 0.971,
+        "ok": true,
+        "engine": "silero",
+        "sampleRate": 48000
+      }
+    ],
+    "scope": "Синтетическая запись через сервер. Живой микрофон и субъективное качество голоса проверяются человеком."
+  },
+  "image": {
+    "elapsedMs": 2659,
+    "text": "Когорта | Зарегистрированные компании | Компании с первой корректной заявкой | Активация за 7 дней (%)\n---|---|---|---\nСентябрь | 120 | 48 | 40%\nОктябрь | 150 | 45 | 30%",
+    "finish": "stop",
+    "usage": {
+      "prompt_tokens": 1872,
+      "completion_tokens": 66,
+      "total_tokens": 1938,
+      "precached_prompt_tokens": 0
+    },
+    "provider": "GigaChat",
+    "model": "GigaChat-3-Ultra",
+    "trace": {
+      "seconds": 2.6,
+      "checked": 1,
+      "inaccessible": 0,
+      "catalog": 0,
+      "graphCount": 0,
+      "local": false,
+      "timings": {
+        "materialsMs": 1,
+        "modelMs": 2618
+      },
+      "actions": [
+        {
+          "tool": "read_document",
+          "source": "Ф1",
+          "status": "done",
+          "detail": "Материал прочитан ограниченным фрагментом."
+        }
+      ],
+      "cost": {
+        "api": "unknown",
+        "humanReview": "not_measured"
+      }
+    },
+    "sources": [
+      {
+        "id": "Ф1",
+        "name": "cohorts.png",
+        "kind": "model_observation",
+        "excerpt": "Изображение передано модели. Точный текст и числа сверяйте с оригиналом."
+      }
+    ],
+    "charts": []
+  },
+  "dictation": {
+    "coldSeconds": 29.06,
+    "warmSeconds": 7.86,
+    "text": "Здорово, как проверить удержание пользователи цифрового сервиса.",
+    "scope": "Synthetic recording; grammar error retained, no claim of perfect recognition"
+  },
+  "limits": [
+    "GigaChat key and quota required",
+    "Speech installation verified on Windows only",
+    "Live microphone on independent jury device not verified",
+    "Direct MP4 analysis and complete cost benchmark not implemented"
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19T15:07:29.734Z",
+  "generatedAt": "2026-11-19T15:15:34.936Z",
   "files": [
     {
       "path": ".github/workflows/check.yml",
@@ -19,7 +19,7 @@
     },
     {
       "path": "README.md",
-      "bytes": 30647
+      "bytes": 33348
     },
     {
       "path": "agent/cli.mjs",
@@ -76,6 +76,10 @@
     {
       "path": "config/runtime.example.env",
       "bytes": 449
+    },
+    {
+      "path": "docs/acceptance/github-check-2026-11-19.json",
+      "bytes": 13513
     },
     {
       "path": "docs/screenshots/dialog.jpg",
