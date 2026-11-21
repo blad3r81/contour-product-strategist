@@ -8,7 +8,7 @@ const destination = resolve(process.argv[2] || `${root}-jury-release`);
 if (destination === root || destination.startsWith(root + sep)) throw Error('Выберите отдельную папку вне рабочего репозитория.');
 await mkdir(destination, { recursive: true });
 const names = [...new Set(execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean))];
-const permittedRoot = new Set(['AGENTS.md', 'README.md', 'megafon-sources.md', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'vite.config.js', 'vercel.json', 'index.html', '.gitignore', '.vercelignore']);
+const permittedRoot = new Set(['AGENTS.md', 'README.md', 'megafon-sources.md', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'vite.config.js', 'vercel.json', 'index.html', '.gitignore', '.gitattributes', '.vercelignore']);
 const secretValues = [];
 for (const file of ['.env.local', process.env.CONTOUR_CREDENTIALS_FILE].filter(Boolean)) {
   const text = await readFile(resolve(root, file), 'utf8').catch(() => '');
