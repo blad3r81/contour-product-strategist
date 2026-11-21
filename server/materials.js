@@ -197,6 +197,10 @@ export async function readDocument(name, bytes, query = '', options = {}) {
     const canvas = await import('@napi-rs/canvas');
     for (const key of ['DOMMatrix', 'ImageData', 'Path2D']) globalThis[key] ??= canvas[key];
     const { PDFParse } = await import('pdf-parse');
+    // The inline worker survives serverless tracing; the default relative worker
+    // path is not necessarily included in the deployed function bundle.
+    const { getData } = await import('pdf-parse/worker');
+    PDFParse.setWorker(getData());
     const parser = new PDFParse({ data: bytes });
     try { return selectDocumentText((await parser.getText()).text, query, options.full === true); }
     finally { await parser.destroy(); }

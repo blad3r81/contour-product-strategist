@@ -17,6 +17,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: node agent/verify-analysis.mjs
+      - run: node agent/verify-full-read.mjs
       - run: node agent/verify-workflow.mjs
       - run: node agent/verify-monitor.mjs
       - run: node agent/verify-config.mjs

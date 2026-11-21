@@ -237,6 +237,7 @@ node agent/cli.mjs resume procurement-check
 ```powershell
 pnpm build
 node agent/verify-analysis.mjs
+node agent/verify-full-read.mjs
 node agent/verify-workflow.mjs
 node agent/verify-monitor.mjs
 node agent/verify-config.mjs

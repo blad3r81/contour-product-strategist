@@ -1,0 +1,45 @@
+{
+  "text": "Прочитанных материалов нет.\n\nОшибка доступа к official-brief.pdf: Setting up fake worker failed: \"Cannot find module '/var/task/node_modules/.pnpm/pdfjs-dist@5.4.296/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs' imported from /var/task/node_modules/.pnpm/pdfjs-dist@5.4.296/node_modules/pdfjs-dist/legacy/build/pdf.mjs\".",
+  "finish": "stop",
+  "usage": {
+    "prompt_tokens": 1039,
+    "completion_tokens": 95,
+    "total_tokens": 1134,
+    "precached_prompt_tokens": 0
+  },
+  "provider": "GigaChat",
+  "model": "GigaChat-3-Ultra",
+  "warning": "Развёрнутый документ требует отдельной проверки выводов, расчётов и обещаний перед принятием решения.",
+  "trace": {
+    "seconds": 1.5,
+    "checked": 0,
+    "inaccessible": 1,
+    "catalog": 0,
+    "graphCount": 0,
+    "local": false,
+    "timings": {
+      "materialsMs": 2,
+      "modelMs": 1505
+    },
+    "actions": [
+      {
+        "tool": "read_document",
+        "source": "Ф1",
+        "status": "error",
+        "detail": "Setting up fake worker failed: \"Cannot find module '/var/task/node_modules/.pnpm/pdfjs-dist@5.4.296/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs' imported from /var/task/node_modules/.pnpm/pdfjs-dist@5.4.296/node_modules/pdfjs-dist/legacy/build/pdf.mjs\"."
+      }
+    ],
+    "cost": {
+      "api": "unknown",
+      "humanReview": "not_measured"
+    }
+  },
+  "sources": [
+    {
+      "id": "Ф1",
+      "name": "official-brief.pdf",
+      "error": "Setting up fake worker failed: \"Cannot find module '/var/task/node_modules/.pnpm/pdfjs-dist@5.4.296/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs' imported from /var/task/node_modules/.pnpm/pdfjs-dist@5.4.296/node_modules/pdfjs-dist/legacy/build/pdf.mjs\"."
+    }
+  ],
+  "charts": []
+}

@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "clips": [
+    {
+      "milliseconds": 1974,
+      "durationSeconds": 6.55,
+      "bytes": 105260,
+      "format": "mp3"
+    },
+    {
+      "milliseconds": 2657,
+      "durationSeconds": 7.2,
+      "bytes": 115628,
+      "format": "mp3"
+    }
+  ],
+  "deliveryFitsPlayback": true,
+  "text": {
+    "deltas": 2,
+    "firstDeltaMs": 5322,
+    "characters": 314
+  },
+  "scope": "HTTP audio delivery and actual text deltas; microphone and browser playback need a separate human check."
+}

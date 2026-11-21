@@ -249,6 +249,9 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus, 
     sources.push(entry);
   }
   actions.push(...sources.map(source => ({ tool: source.url ? 'read_url' : 'read_document', source: source.id, status: source.error ? 'error' : 'done', detail: source.error ?? source.coverage ?? 'Материал прочитан в пределах объявленного формата.' })));
+  if (fullRead && sources.some(source => source.name && source.error)) {
+    throw Object.assign(Error('Полное чтение не выполнено. Не удалось прочитать: ' + sources.filter(source => source.name && source.error).map(source => source.name).join(', ') + '. Проверьте формат файла или приложите текстовую версию. Анализ по непрочитанным материалам остановлен.'), { status: 422 });
+  }
   const reviewingData = Boolean(data.decision?.choice || saved?.state.decision?.choice) &&
     /пересмотр|провер[ьи].{0,30}(?:услов|решени|порог)/i.test(prompt);
   function applyCalculation(calculation) {
@@ -614,6 +617,6 @@ export async function route(action, req, res, local = false) {
       : 'Локальный Qwen не запущен. Запустите Ollama и повторите запрос.') :
       error.name === 'TimeoutError' ? 'Модель не ответила вовремя. Повторите запрос или сократите материалы.' : error.message;
     if (res.headersSent) return res.end(`${JSON.stringify({ error: message })}\n`);
-    return reply(res, 502, { error: message });
+    return reply(res, error.status === 422 ? 422 : 502, { error: message });
   }
 }
