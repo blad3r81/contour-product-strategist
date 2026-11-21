@@ -159,8 +159,12 @@ function subtitles(bytes, ext) {
   return { text: `Субтитры: ${sample.length} из ${cues.length} реплик. Доступна расшифровка с таймкодами. Кадры, звук и личность говорящего по ней не проверены.\n${sample.join('\n')}` };
 }
 
-export function selectDocumentText(input, query = '') {
+export function selectDocumentText(input, query = '', full = false) {
   if (!input.trim()) throw Error('В документе нет читаемого текста.');
+  if (full) {
+    if (input.length > 60000) throw Error('Полное чтение ограничено 60 000 символов. Разделите документ на части.');
+    return { text: input, coverage: `Полное чтение: включены все ${input.length} символов извлечённого текста. Изображения без текстового слоя отдельно не распознавались.` };
+  }
   if (input.length <= 6500) return { text: input };
   const terms = [...new Set((query.toLowerCase().match(/[\p{L}\d]{4,}/gu) ?? []).map(word => word.slice(0, 6)))].slice(0, 25);
   const chunks = [];
@@ -183,20 +187,20 @@ export function selectDocumentText(input, query = '') {
   };
 }
 
-export async function readDocument(name, bytes, query = '') {
+export async function readDocument(name, bytes, query = '', options = {}) {
   const ext = name.split('.').at(-1).toLowerCase();
   if (ext === 'csv') return table(parse(bytes, { bom: true, skip_empty_lines: true, delimiter: bytes.toString().split(/\r?\n/, 1)[0].includes(';') ? ';' : ',', relax_column_count: true }), name);
   if (ext === 'xlsx') return table(await readSheet(bytes), name);
   if (['srt', 'vtt'].includes(ext)) return subtitles(bytes, ext);
-  if (ext === 'docx') return selectDocumentText((await mammoth.extractRawText({ buffer: bytes })).value, query);
+  if (ext === 'docx') return selectDocumentText((await mammoth.extractRawText({ buffer: bytes })).value, query, options.full === true);
   if (ext === 'pdf') {
     const canvas = await import('@napi-rs/canvas');
     for (const key of ['DOMMatrix', 'ImageData', 'Path2D']) globalThis[key] ??= canvas[key];
     const { PDFParse } = await import('pdf-parse');
     const parser = new PDFParse({ data: bytes });
-    try { return selectDocumentText((await parser.getText()).text, query); }
+    try { return selectDocumentText((await parser.getText()).text, query, options.full === true); }
     finally { await parser.destroy(); }
   }
-  if (['txt', 'md'].includes(ext)) return selectDocumentText(bytes.toString(), query);
+  if (['txt', 'md'].includes(ext)) return selectDocumentText(bytes.toString(), query, options.full === true);
   throw Error('Формат файла пока не поддерживается.');
 }

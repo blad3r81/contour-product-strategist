@@ -84,7 +84,7 @@ export async function complete(messages, images, local, signal, maxTokens = 1800
     } finally { cleaned = await dispose(); }
     if (['blacklist', 'content_filter'].includes(result.finish)) return { text: 'Провайдер ограничил ответ.', provider: 'GigaChat', model, blocked: true, usage: result.usage };
     if (!result.text?.trim()) throw Error('GigaChat вернул пустой ответ.');
-    return { ...result, provider: 'GigaChat', model, ...(result.finish === 'length' ? { warning: 'Ответ достиг лимита длины и требует продолжения.' } : {}),
+    return { ...result, provider: 'GigaChat', model, ...(result.finish === 'length' ? { incomplete: true, warning: 'Ответ достиг лимита длины и требует продолжения.' } : {}),
       ...(!cleaned ? { warning: 'Временное изображение не удалось удалить из хранилища GigaChat. Проверьте кабинет API.' } : {}) };
   }
   const online = usesOnlineModel(local);
@@ -127,5 +127,5 @@ export async function complete(messages, images, local, signal, maxTokens = 1800
   }
   if (result.finish === 'content_filter') return { text: 'Провайдер ограничил ответ. Доступные материалы и расчёты показаны ниже.', provider, model, usage: result.usage, blocked: true };
   if (!result.text?.trim()) throw Error(`${provider} вернул пустой ответ.`);
-  return { text: result.text, provider, model, usage: result.usage, timings: result.timings, ...(result.finish === 'length' ? { warning: 'Ответ достиг лимита длины и может быть неполным.' } : {}) };
+  return { text: result.text, provider, model, usage: result.usage, timings: result.timings, ...(result.finish === 'length' ? { incomplete: true, warning: 'Ответ достиг лимита длины и может быть неполным.' } : {}) };
 }

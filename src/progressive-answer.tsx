@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function ProgressiveAnswer({ text, live, onReveal }: { text: string; live: boolean; onReveal: () => void }) {
   const [shown, setShown] = useState(live ? '' : text);
@@ -33,5 +34,5 @@ export function ProgressiveAnswer({ text, live, onReveal }: { text: string; live
     return () => cancelAnimationFrame(frame);
   }, [text, live, reduced]);
   useEffect(onReveal, [shown]);
-  return <div className="chat-answer" aria-live="off" aria-busy={shown.length < text.length}><Markdown skipHtml>{shown}</Markdown></div>;
+  return <div className="chat-answer" aria-live="off" aria-busy={shown.length < text.length}><Markdown skipHtml remarkPlugins={[remarkGfm]}>{shown}</Markdown></div>;
 }

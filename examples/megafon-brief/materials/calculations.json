@@ -1,0 +1,34 @@
+{
+  "kind": "Учебный сценарий, не наблюдения",
+  "grossProfitGapRub": 6000000,
+  "paidMonthsRequiredBeforeNewCosts": 12000,
+  "normalApproximation": {
+    "p0": 0.12,
+    "p1": 0.09,
+    "alpha": 0.05,
+    "power": 0.8,
+    "perArm": 1638,
+    "total": 3276,
+    "recruitWeeksAt100": 33,
+    "warning": "Приближение для независимых семей с одним индексным номером. Реальная мощность требует исходной частоты, потерь и дизайна."
+  },
+  "scenario": {
+    "families": 10000,
+    "activeFamilies": 6500,
+    "ownNumberOwners": 1000,
+    "activation14DaysPercent": 55,
+    "monthlyIncrementalPaidMonths": [
+      80,
+      160,
+      240,
+      320,
+      400,
+      400
+    ],
+    "paidMonths": 1600,
+    "newDirectCostRub": 300000,
+    "incrementalGrossProfitRub": 500000,
+    "operatorGrossProfitRub": 279500000,
+    "downsideOperatorGrossProfitRub": 279100000
+  }
+}

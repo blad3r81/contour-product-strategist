@@ -1,0 +1,11 @@
+import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const file=await fs.readFile(new URL('./materials/targets.csv',import.meta.url));
+const prompt='Построй график доли активных семейных групп среди подключённых. Числитель активные группы в последнем календарном месяце, знаменатель подключённые на конец года. Таблица переписана из официального учебного брифа, страница3. Сравниваются прогноз без изменений и минимальная цель, это НЕ результаты до/после и НЕ доказанный эффект. Покажи расчёт62,5% и66,67%, разницу в процентных пунктах. Не строй стратегию, ответ кратко.';
+const started=new Date();
+const response=await fetch((process.env.CONTOUR_DEMO_URL||'http://127.0.0.1:5180')+'/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt,files:[{name:'targets.csv',base64:file.toString('base64')}],useCatalog:false,persist:true,caseId:'official-megafon-chart',project:{title:'Официальный бриф: показатели и знаменатели'}}),signal:AbortSignal.timeout(120000)});
+const r=await response.json();
+await fs.writeFile(new URL('./results/11-chart.json',import.meta.url),JSON.stringify({started:started.toISOString(),ended:new Date().toISOString(),seconds:(Date.now()-started)/1000,...r},null,2));
+assert.ok(response.ok&&!r.blocked&&!r.incomplete,r.error||r.warning);
+assert.ok(r.charts?.some(c=>c.points.length===2&&Math.abs(c.points[0].value-62.5)<.00001&&Math.abs(c.points[1].value-66.66666666666667)<.00001),'Нужен график доли, а не исходных количеств');
+console.log(JSON.stringify({seconds:(Date.now()-started)/1000,charts:r.charts.map(c=>({label:c.label,points:c.points}))},null,2));

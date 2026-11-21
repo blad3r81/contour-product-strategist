@@ -139,11 +139,15 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
       if (stored.reduce((bytes, file) => bytes + file.size, 0) > 2_650_000) throw Error('Суммарный размер файлов превышает 2,65 МБ. Удалите часть вложений.');
       const files = await Promise.all(stored.map(async file => ({ name: file.name, base64: await base64(file) })));
       const history = p.messages.map(normalize);
+      const filesOnly = /(?:только|исключительно).{0,40}(?:прилож|влож|файл)|без внешн.{0,20}источ/i.test(prompt);
       const recentUrls = history.slice(-8).reverse().flatMap(message => message.sources?.flatMap(source => source.url && !source.error ? [source.url] : []) || []);
       const urls = [...new Set([...recentUrls, ...(p.sources?.map(source => source.url) || [])])].slice(0, 3);
       const result = await request('chat', {
-        prompt, spoken: spoken || inCall, stream: true, history: history.map(({ role, content }) => ({ role, content })),
-        files, urls, decision: p.decision, caseId: p.caseId ?? p.id, persist: true,
+        prompt, spoken: spoken || inCall, stream: true, history: filesOnly ? [] : history.map(({ role, content }) => ({ role, content })),
+        useCatalog: !filesOnly,
+        readAll: /(?:прочитай|разбери|изучи).{0,60}(?:целиком|полностью)|весь\s+бриф/i.test(prompt),
+        outputMode: !inCall && /(?:полный|разв[её]рнутый|подробный)\s+(?:документ|отч[её]т)|документ\s+из\s+пяти\s+частей/i.test(prompt) ? 'report' : undefined,
+        files, urls: filesOnly ? [] : urls, decision: p.decision, caseId: p.caseId ?? p.id, persist: true,
         project: { id: p.id, title: p.title, decisionVersions: p.decisionVersions },
       }, signal, preview => {
         if (active.current !== task) return;
@@ -214,7 +218,10 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось сохранить файлы.'); }
   }
 
-  const displayMessages: Message[] = project.messages.map(normalize);
+  const displayMessages: Message[] = project.messages.map((value, index) => {
+    const message = normalize(value);
+    return { ...message, id: message.id || `saved:${id}:${index}` };
+  });
   if (pending && !displayMessages.some(message => message.id === `${pending.id}:assistant`)) displayMessages.push(
     { id: `${pending.id}:user`, role: 'user', content: pending.prompt },
     { id: `${pending.id}:assistant`, role: 'assistant', content: pending.text || pending.preview || '' },

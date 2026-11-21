@@ -4,3 +4,8 @@ node_modules
 .env*
 voice
 cases
+tmp
+output/video
+runtime
+models
+.venv

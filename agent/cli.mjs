@@ -16,7 +16,7 @@ async function inspect(target, query = '') {
   }
   const info = await stat(target);
   if (!info.isFile() || info.size > MAX_FILE_BYTES) throw Error('Укажите файл размером до 2 МБ.');
-  const material = await readDocument(basename(target), await readFile(target), query);
+  const material = await readDocument(basename(target), await readFile(target), query === '--full' ? '' : query, { full: process.argv.includes('--full') });
   const candidates = material.table ? ratioCandidates([{ id: 'Ф1', data: material.table }]) : [];
   return {
     path: target, ...material,
@@ -87,7 +87,7 @@ try {
   if (command === 'inspect' && target) result = await inspect(target, input);
   else if (command === 'checkpoint' && target && input) result = await save(target, input);
   else if (command === 'resume' && target) result = await resume(target);
-  else throw Error('Команды: inspect <файл или публичный URL>, checkpoint <дело> <файл JSON>, resume <дело>.');
+  else throw Error('Команды: inspect <файл или публичный URL> [вопрос] [--full], checkpoint <дело> <файл JSON>, resume <дело>.');
   console.log(JSON.stringify(result, null, 2));
 } catch (error) {
   console.error(error.message);

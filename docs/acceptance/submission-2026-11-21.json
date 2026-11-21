@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-21",
+  "checks": [
+    {
+      "command": "node agent/verify-analysis.mjs",
+      "exitCode": 0,
+      "output": "PASS. Таймкоды, проверка долей и проверка отчёта."
+    },
+    {
+      "command": "node agent/verify-workflow.mjs",
+      "exitCode": 0,
+      "output": "PASS. Произвольная доля, нулевой знаменатель, несогласованные данные, неоднозначный период, восстановление и конфликт версий."
+    },
+    {
+      "command": "node agent/verify-monitor.mjs",
+      "exitCode": 0,
+      "output": "PASS. Фоновый пересмотр, повтор без дубля, новый процесс, нормализация, ошибка данных и восстановление; выбор человека сохранён."
+    },
+    {
+      "command": "node agent/verify-config.mjs",
+      "exitCode": 0,
+      "output": "PASS. Без ключа выбранного GigaChat показана ошибка настройки; незаметного перехода на локальную модель нет."
+    },
+    {
+      "command": "node agent/verify-demo-access.mjs",
+      "exitCode": 0,
+      "output": "PASS. Signed anonymous sessions, tamper rejection, origin checks, burst limits."
+    },
+    {
+      "command": "node agent/verify-voice-text.mjs",
+      "exitCode": 0,
+      "output": "PASS. Bounded speech chunks preserve the full answer and remove service markup."
+    }
+  ],
+  "note": "Local code checks. Not a benchmark of strategic quality or voice recognition."
+}

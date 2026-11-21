@@ -1,4 +1,8 @@
 .conversation .chat-message p, .conversation .chat-sources { overflow-wrap: anywhere; }
+.chat-answer { overflow-x: auto; }
+.chat-answer table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.5; margin-block: 18px; }
+.chat-answer th, .chat-answer td { padding: 10px 12px; border-bottom: 1px solid #e6e1e9; text-align: left; vertical-align: top; min-width: 110px; }
+.chat-answer th { color: #44344f; background: #f6f3f8; font-weight: 600; }
 .conversation .chat-user p { white-space: pre-wrap; }
 .conversation .chat-assistant { align-self: stretch; max-width: 100%; }
 .conversation .messages .chat-assistant { background: transparent; }

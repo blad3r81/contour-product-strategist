@@ -20,7 +20,8 @@ for (const file of ['.env.local', process.env.CONTOUR_CREDENTIALS_FILE].filter(B
 const included = [];
 for (const name of names.sort()) {
   const top = name.split('/')[0];
-  if (!permittedRoot.has(name) && !['src', 'server', 'agent', 'voice', 'api', 'public', 'examples', '.github', 'config', 'docs'].includes(top)) continue;
+  if (!permittedRoot.has(name) && !['src', 'server', 'agent', 'voice', 'api', 'public', 'examples', '.github', 'config', 'docs', 'output'].includes(top)) continue;
+  if (top === 'output' && !name.startsWith('output/pdf/')) continue;
   if (/^(?:docs\/development-notes\.md|agent\/(?:jury-handover|readiness-2026-11-19)\.md)$/.test(name)) continue;
   if (/(^|\/)(?:\.env[^/]*|cases|node_modules|__pycache__|models|\.venv)(\/|$)|\.(?:pem|key|part|log|pyc)$/i.test(name)) continue;
   const input = resolve(root, name);

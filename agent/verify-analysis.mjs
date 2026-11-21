@@ -41,6 +41,16 @@ const longDocument = 'Введение. '.repeat(900) + '\nОграничени�
 const excerpt = selectDocumentText(longDocument, 'Какие ограничения у бюджета проверки?');
 assert.match(excerpt.text, /бюджет проверки согласует руководитель/);
 assert.match(excerpt.coverage, /Остальной текст/);
+const completeDocument = selectDocumentText(longDocument, '', true);
+assert.ok(completeDocument.text.length > 19000);
+assert.match(completeDocument.text, /Ограничения: бюджет проверки согласует руководитель/);
+assert.equal(completeDocument.text, longDocument);
+assert.match(completeDocument.coverage, /^Полное чтение:/);
+assert.throws(() => selectDocumentText('я'.repeat(60001), '', true), /60/);
+const official = await readDocument('official-brief.pdf', await readFile(new URL('../examples/megafon-brief/materials/official-brief.pdf', import.meta.url)), '', { full: true });
+assert.match(official.text, /3 человеко|3 чел|три человеко/);
+assert.match(official.coverage, /^Полное чтение:/);
+assert.ok(official.text.length > 29000, 'Должны читаться все 11 страниц, включая ресурсы последней страницы.');
 await assert.rejects(readDocument('empty.txt', Buffer.from('')), /нет читаемого текста/);
 console.log('PASS. Таймкоды, проверка долей и проверка отчёта.');
 
