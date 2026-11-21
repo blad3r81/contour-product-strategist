@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import Markdown from 'react-markdown';
+import { ProgressiveAnswer } from './progressive-answer';
 import type { CaseSource } from './showcase';
 import { AgentVisual } from './agent-visuals';
 import { scenarios } from './landing';
@@ -10,7 +10,7 @@ import './workspace-chat.css';
 type Material = { id: string; url?: string; name?: string; error?: string; excerpt?: string; coverage?: string };
 type Chart = { name: string; label: string; category: string; points: { label: string; value: number }[] };
 type Trace = { seconds: number; checked: number; inaccessible: number; catalog: number; graphCount: number; local?: boolean; resumedFrom?: string; actions?: { tool: string; source?: string; status: string; detail: string; questions?: { question: string; source: string }[] }[] };
-type Message = { role: 'user' | 'assistant'; content: string; provider?: string; model?: string; sources?: Material[]; charts?: Chart[]; warning?: string; reviewed?: boolean; trace?: Trace; usage?: { prompt_tokens?: number; completion_tokens?: number } };
+type Message = { id?: string; role: 'user' | 'assistant'; content: string; provider?: string; model?: string; sources?: Material[]; charts?: Chart[]; warning?: string; reviewed?: boolean; trace?: Trace; usage?: { prompt_tokens?: number; completion_tokens?: number } };
 export type Project = { id: string; title: string; messages: (string | Message)[]; files: string[]; sources?: CaseSource[]; decision: Record<string, string>; decisionVersions?: { savedAt: string; fields: Record<string, string> }[]; caseId?: string };
 type Health = { local: boolean; ollama: boolean; modelLoaded?: boolean; online: boolean; speech: boolean; synthesis: boolean; voiceLoading?: boolean; gate: boolean };
 
@@ -59,9 +59,12 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
   const [health, setHealth] = useState<Health>();
   const [access, setAccess] = useState(() => sessionStorage.getItem('contour-access') || '');
   const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState<{ prompt: string; status: string; preview?: string }>();
+  const [pending, setPending] = useState<{ id: string; prompt: string; status: string; preview?: string; text?: string }>();
+  const [revealing, setRevealing] = useState<string>();
+  const [voiceGate, setVoiceGate] = useState<string>();
   const active = useRef<{ abort: AbortController; spoken: boolean } | undefined>(undefined);
   const messagesRef = useRef<HTMLDivElement>(null);
+  const followBottom = useRef(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   function saveDraft(text: string) {
@@ -72,9 +75,9 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
 
   function change(next: Project) { current.current = next; onChange(next); }
 
-  async function request(action: string, body: object, signal?: AbortSignal, onPreview?: (text: string) => void, onProgress?: (text: string) => void, onSpeechStatus?: (text: string) => void) {
+  async function request(action: string, body: object, signal?: AbortSignal, onPreview?: (text: string) => void, onProgress?: (text: string) => void, onSpeechStatus?: (text: string) => void, onAudio?: (audio: string) => void, onDelta?: (delta: string) => void) {
     const response = await fetch(`/api/${action}`, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', ...(access ? { 'x-contour-access': access } : {}) }, body: JSON.stringify(body) });
-    if (response.ok && onPreview && response.body && response.headers.get('content-type')?.includes('application/x-ndjson')) {
+    if (response.ok && (onPreview || onAudio) && response.body && response.headers.get('content-type')?.includes('application/x-ndjson')) {
       const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
       let remainder = '';
       try {
@@ -89,7 +92,10 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
             if (event.error) throw Error(event.error);
             if (event.progress) onProgress?.(event.progress);
             if (event.speechStatus) onSpeechStatus?.(event.speechStatus);
-            if (event.preview) onPreview(event.preview);
+            if (event.preview) onPreview?.(event.preview);
+            if (event.delta) onDelta?.(event.delta);
+            if (event.audio) onAudio?.(event.audio);
+            if (event.done) return {};
             if (event.result) return event.result;
           }
         }
@@ -102,11 +108,12 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
   }
 
   function cancel(spokenOnly = false) {
-    if (spokenOnly && !active.current?.spoken) return;
+    if (spokenOnly && active.current && !active.current.spoken) return;
     active.current?.abort.abort();
     active.current = undefined;
     setPending(undefined);
     setBusy(false);
+    setVoiceGate(undefined);
   }
 
   async function send(text: string, spoken: boolean, onPreview?: (text: string) => void, onSpeechStatus?: (text: string) => void) {
@@ -116,12 +123,15 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
       if (spoken) saveDraft([draftValue.current, prompt].filter(Boolean).join('\n'));
       return;
     }
-    const task = { abort: new AbortController(), spoken };
+    const inCall = Boolean(onPreview);
+    const task = { id: crypto.randomUUID(), abort: new AbortController(), spoken: spoken || inCall };
     active.current = task;
     setNotice(''); setBusy(true);
-    setPending({ prompt, status: 'Готовлю запрос…' });
+    followBottom.current = true;
+    setRevealing(`${task.id}:assistant`);
+    setVoiceGate(inCall ? `${task.id}:assistant` : undefined);
+    setPending({ id: task.id, prompt, status: 'Готовлю запрос…' });
     const p = current.current;
-    const inCall = Boolean(onPreview);
     const deadline = inCall ? AbortSignal.timeout(150000) : undefined;
     const signal = deadline ? AbortSignal.any([task.abort.signal, deadline]) : task.abort.signal;
     try {
@@ -143,16 +153,19 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
         if (active.current === task) setPending(previous => previous && { ...previous, status });
       }, status => {
         if (active.current === task) onSpeechStatus?.(status);
+      }, undefined, delta => {
+        if (active.current === task) setPending(previous => previous && { ...previous, text: (previous.text || '') + delta });
       });
       if (task.abort.signal.aborted) return;
       const updated = current.current;
       const { text: answer, provider, model, sources, charts, usage, warning, reviewed, trace } = result;
-      const user: Message = { role: 'user', content: prompt };
-      const assistant: Message = { role: 'assistant', content: answer, provider, model, sources, charts, usage, warning, reviewed, trace };
+      const user: Message = { id: `${task.id}:user`, role: 'user', content: prompt };
+      const assistant: Message = { id: `${task.id}:assistant`, role: 'assistant', content: answer, provider, model, sources, charts, usage, warning, reviewed, trace };
       change({ ...updated, title: updated.messages.length ? updated.title : (prompt.length > 65 ? prompt.slice(0, 62) + '…' : prompt), messages: [...updated.messages, user, assistant] });
       if (!spoken && draftValue.current.trim() === prompt) saveDraft('');
       return (result.spokenText || answer) as string;
     } catch (error) {
+      setVoiceGate(undefined);
       if (!task.abort.signal.aborted) {
         setNotice(deadline?.aborted ? 'Сервер не успел закончить ответ. Повторите запрос или сократите материалы.' : error instanceof Error ? error.message : 'Не удалось отправить запрос.');
         if (spoken) saveDraft([draftValue.current, prompt].filter(Boolean).join('\n'));
@@ -163,10 +176,12 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
     }
   }
 
-  const voice = useVoiceChat({ request, onDictation: text => {
+  const voice = useVoiceChat({ request, onSpeechStart: () => setVoiceGate(undefined), requestSpeech: async (parts, signal, onAudio) => {
+    await request('speak', { text: parts.join(' '), parts, stream: true }, signal, undefined, undefined, undefined, onAudio);
+  }, onDictation: text => {
     saveDraft([draftValue.current, text].filter(Boolean).join(' '));
     setNotice('Расшифровка добавлена в запрос.');
-  }, onTurn: (text, preview, status) => send(text, true, preview, status), cancelTurn: () => cancel(true), report: setNotice });
+  }, onTurn: (text, preview, status) => send(text, true, preview, status), cancelTurn: () => cancel(true), report: message => { setVoiceGate(undefined); setNotice(message); } });
 
   useEffect(() => {
     let warming = false;
@@ -182,9 +197,10 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
     return () => { clearInterval(interval); active.current?.abort.abort(); };
   }, []);
 
-  useEffect(() => {
-    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight });
-  }, [project.messages.length, pending]);
+  function followAnswer() {
+    if (followBottom.current) requestAnimationFrame(() => { const element = messagesRef.current; if (element && followBottom.current) element.scrollTop = element.scrollHeight; });
+  }
+  useEffect(followAnswer, [project.messages.length, pending]);
 
   async function attach(files: FileList | null) {
     if (!files?.length) return;
@@ -198,23 +214,23 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось сохранить файлы.'); }
   }
 
+  const displayMessages: Message[] = project.messages.map(normalize);
+  if (pending && !displayMessages.some(message => message.id === `${pending.id}:assistant`)) displayMessages.push(
+    { id: `${pending.id}:user`, role: 'user', content: pending.prompt },
+    { id: `${pending.id}:assistant`, role: 'assistant', content: pending.text || pending.preview || '' },
+  );
   return <>
     <div className="work-grid conversation-grid">
       <section className={`chat${voice.mode === 'call' ? ' chat-with-call' : ''}`}>
-        <div className="messages" ref={messagesRef} aria-live="polite">
-          {project.messages.map(normalize).map((message, index) => <article key={index} className={`chat-message chat-${message.role}`}>
+        <div className="messages" ref={messagesRef} aria-live="polite" onScroll={event => { const element = event.currentTarget; followBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80; }}>
+          {displayMessages.map((message, index) => <article key={message.id || `history:${index}`} className={`chat-message chat-${message.role}`}>
             <small>{message.role === 'user' ? 'Вы' : 'Агент'}</small>
-            {message.role === 'user' ? <p>{message.content}</p> : <Markdown skipHtml>{message.content}</Markdown>}
-            {message.warning && <p role="status">{message.warning}</p>}
-            {message.charts?.map((chart, chartIndex) => <DataChart chart={chart} key={chartIndex}/>)}
+            {message.role === 'user' ? <p>{message.content}</p> : <ProgressiveAnswer text={message.id === voiceGate ? '' : message.content} live={message.id === revealing} onReveal={followAnswer}/>}
+            {message.role === 'assistant' && (!message.content || message.id === voiceGate) && <p className="chat-processing" role="status">{message.id === voiceGate && !busy ? 'Готовлю голосовой ответ…' : 'Готовлю ответ…'}</p>}
+            {message.id !== voiceGate && message.warning && <p role="status">{message.warning}</p>}
+            {message.id !== voiceGate && message.charts?.map((chart, chartIndex) => <DataChart chart={chart} key={chartIndex}/>)}
           </article>)}
           {!project.messages.length && !pending && voice.mode !== 'call' && <div className="chat-empty"><AgentVisual/><h2>Что нужно решить?</h2><p>Опишите, что изменилось и какой выбор предстоит сделать.</p>{!draft && <div className="chat-suggestions">{scenarios.slice(0, 3).map(([title,, prompt]) => <button type="button" className="btn outline" key={title} onClick={() => { saveDraft(prompt); inputRef.current?.focus(); }}>{title}</button>)}</div>}</div>}
-          {pending && <>
-            <article className="chat-message chat-user"><small>Вы</small><p>{pending.prompt}</p></article>
-            {pending.preview
-              ? <article className="chat-message chat-assistant"><small>Агент</small><Markdown skipHtml>{pending.preview}</Markdown></article>
-              : <p className="chat-processing" role="status">Готовлю ответ…</p>}
-          </>}
         </div>
         {voice.mode === 'call' && <section className="voice-panel voice-call" aria-label="Голосовой разговор" data-phase={voice.phase === 'Отвечаю' ? 'speaking' : voice.phase === 'Слушаю' ? 'listening' : 'working'}>
           <div className="voice-orb" ref={voice.orb} aria-hidden="true">

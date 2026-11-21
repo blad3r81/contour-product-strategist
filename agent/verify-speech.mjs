@@ -15,7 +15,7 @@ async function ready(base) {
 }
 async function post(base, action, data) {
   const start = performance.now();
-  const response = await fetch(`${base}/${action}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data), signal: AbortSignal.timeout(150000) });
+  const response = await fetch(`${base}/${action}`, { method: 'POST', headers: { 'content-type': 'application/json', ...(process.env.QWEN_VOICE_KEY ? { 'x-contour-service-key': process.env.QWEN_VOICE_KEY } : {}) }, body: JSON.stringify(data), signal: AbortSignal.timeout(150000) });
   const result = await response.json();
   assert.ok(response.ok, result.error);
   samples.push({ action, seconds: Math.round((performance.now() - start) / 10) / 100, engine: result.engine, sampleRate: result.sampleRate });

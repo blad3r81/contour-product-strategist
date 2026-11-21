@@ -27,7 +27,7 @@ export async function warmLocalModel(signal) {
   return response.ok;
 }
 
-async function readStream(body, online, onPreview, onFirstToken) {
+async function readStream(body, online, onPreview, onFirstToken, onText) {
   const decoder = new TextDecoder();
   let remainder = '';
   let text = '';
@@ -45,6 +45,7 @@ async function readStream(body, online, onPreview, onFirstToken) {
     const delta = choice?.delta?.content ?? event.message?.content ?? '';
     if (!text && delta) onFirstToken?.();
     text += delta;
+    if (delta) onText?.(delta);
     finish = choice?.finish_reason || event.done_reason || finish;
     usage = event.usage ?? (event.eval_count ? { prompt_tokens: event.prompt_eval_count, completion_tokens: event.eval_count } : usage);
     if (!online && event.done) timings = Object.fromEntries(
@@ -68,14 +69,14 @@ async function readStream(body, online, onPreview, onFirstToken) {
   return { text, usage, finish, timings };
 }
 
-export async function complete(messages, images, local, signal, maxTokens = 1800, onPreview, onFirstToken, schema) {
+export async function complete(messages, images, local, signal, maxTokens = 1800, onPreview, onFirstToken, schema, onText) {
   if (usesGigaChat()) {
-    const stream = Boolean(onPreview || onFirstToken);
+    const stream = Boolean(onPreview || onFirstToken || onText);
     const { response, model, dispose } = await gigaComplete(messages, signal, maxTokens, schema, stream, images);
     let result;
     let cleaned;
     try {
-      if (stream) result = await readStream(response.body, true, onPreview, onFirstToken);
+      if (stream) result = await readStream(response.body, true, onPreview, onFirstToken, onText);
       else {
         const data = await response.json();
         result = { text: data.choices?.[0]?.message?.content, finish: data.choices?.[0]?.finish_reason, usage: data.usage };
@@ -98,7 +99,7 @@ export async function complete(messages, images, local, signal, maxTokens = 1800
     if (!online) return { ...message, images: images.map(image => image.data) };
     return { ...message, content: [{ type: 'text', text: message.content }, ...images.map(image => ({ type: 'image_url', image_url: { url: `data:${image.type};base64,${image.data}` } }))] };
   });
-  const stream = Boolean(onPreview || onFirstToken);
+  const stream = Boolean(onPreview || onFirstToken || onText);
   const thinking = onPreview ? process.env.CONTOUR_QWEN_FAST_MODE : '';
   const fastMode = thinking === 'dashscope' ? { enable_thinking: false }
     : thinking === 'template' ? { chat_template_kwargs: { enable_thinking: false } } : {};
@@ -114,7 +115,7 @@ export async function complete(messages, images, local, signal, maxTokens = 1800
   if (response.status === 429) throw Error('Модель занята или достигнут лимит. Попробуйте ещё раз.');
   if (!response.ok) throw Error(`${provider} вернул ошибку (${response.status}).`);
   let result;
-  if (stream) result = await readStream(response.body, online, onPreview, onFirstToken);
+  if (stream) result = await readStream(response.body, online, onPreview, onFirstToken, onText);
   else {
     const data = await response.json();
     const choice = data.choices?.[0];

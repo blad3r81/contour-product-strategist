@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { calculateRatio } from '../server/research.js';
+import { calculateRatio, ratioCandidates } from '../server/research.js';
 import { readCase, saveCase } from '../server/cases.js';
 import { tableReview } from '../server/review.js';
 
@@ -17,6 +17,13 @@ assert.match(computed.text, /-10 п\. п\./);
 assert.equal(tableReview('Доля события ниже 30%', computed.ratios), undefined, 'Неоднозначный период нельзя выбрать за пользователя.');
 assert.equal(calculateRatio({ ...table, rows: [['A', 0, 0, 0]] }, mapping).valid, false);
 assert.equal(calculateRatio({ ...table, rows: [['A', 120, 48, 41]] }, mapping).chart, undefined);
+const counts = { columns: ['cohort', 'registered', 'second_booking_30d'], rows: [['2026-08', 120, 48], ['2026-09', 150, 45], ['2026-10', 100, 28]] };
+const derived = calculateRatio(counts, { ...mapping, rate: -1 });
+assert.equal(derived.valid, true);
+assert.deepEqual(derived.chart.points.map(point => Math.round(point.value * 1e8) / 1e8), [40, 30, 28]);
+assert.equal(ratioCandidates([{ id: 'Ф2', data: counts }]).length, 1);
+assert.equal(calculateRatio({ ...counts, rows: [['empty', 0, 0]] }, { ...mapping, rate: -1 }).chart, undefined);
+assert.equal(calculateRatio({ ...counts, rows: [['bad', 100, 101]] }, { ...mapping, rate: -1 }).valid, false);
 const id = `verify-${Date.now()}`;
 const initial = { stage: 'brief', task: 'Учебная задача', next: 'Прочитать материал', evidence: [] };
 const saved = await saveCase(id, initial, null);

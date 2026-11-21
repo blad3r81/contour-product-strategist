@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { base64 } from './chat-files';
+import { speechParts } from './voice-text';
 
 type Mode = 'call' | 'dictation';
 type Phase = 'Подключаю микрофон' | 'Слушаю' | 'Распознаю речь' | 'Думаю' | 'Готовлю голосовой ответ' | 'Отвечаю';
 type Options = {
   request: (action: string, payload: object, signal?: AbortSignal) => Promise<{ text?: string; audio?: string }>;
+  requestSpeech: (parts: string[], signal: AbortSignal, onAudio: (audio: string) => void) => Promise<void>;
+  onSpeechStart: () => void;
   onDictation: (text: string) => void;
   onTurn: (text: string, onPreview: (text: string) => void, onSpeechStatus: (text: string) => void) => Promise<string | undefined>;
   cancelTurn: () => void;
@@ -63,20 +66,6 @@ function wav(frames: Float32Array[], rate: number): Blob {
   return new Blob([bytes.buffer], { type: 'audio/wav' });
 }
 
-function speechParts(markdown: string) {
-  const clean = markdown.replace(/\[([^\]]+)\]\(https?:[^)]+\)/g, '$1').replace(/https?:\/\/\S+/g, '').replace(/\[[ИФ]\d+\]/g, '')
-    .replace(/[*_#`]/g, '').replace(/^\s*(?:[-–]|\d+[.)])\s+/gm, '').replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
-  const chunks: string[] = [];
-  for (const { segment } of new Intl.Segmenter('ru', { granularity: 'sentence' }).segment(clean)) {
-    for (const part of segment.trim().match(/.{1,220}(?:\s|$)|.{1,220}/g) || []) {
-      const previous = chunks.at(-1);
-      if (previous && previous.length + part.length + 1 <= 220) chunks[chunks.length - 1] = `${previous} ${part.trim()}`;
-      else chunks.push(part.trim());
-    }
-  }
-  return chunks;
-}
-
 export function useVoiceChat(options: Options) {
   const latest = useRef(options);
   latest.current = options;
@@ -103,17 +92,28 @@ export function useVoiceChat(options: Options) {
     const play: NonNullable<typeof playback.current> = { abort: new AbortController() };
     playback.current = play;
     const parts = speechParts(text);
-    const synthesize = (part: string) => latest.current.request('speak', { text: part }, play.abort.signal)
-      .then(value => ({ value, error: undefined }), (error: Error) => ({ value: undefined, error }));
-    let next = parts.length ? synthesize(parts[0]) : undefined;
-    for (let index = 0; next; index++) {
+    if (!parts.length) return;
+    const clips: Promise<{ buffer?: AudioBuffer; error?: Error }>[] = [];
+    let done = false;
+    let failure: Error | undefined;
+    let notify: (() => void) | undefined;
+    const wake = () => { notify?.(); notify = undefined; };
+    play.abort.signal.addEventListener('abort', wake, { once: true });
+    const synthesis = latest.current.requestSpeech(parts, play.abort.signal, audio => {
+      clips.push(decodeAudio(state.context, audio).then(buffer => ({ buffer }), (error: Error) => ({ error })));
+      wake();
+    }).catch((error: Error) => { failure = error; }).finally(() => { done = true; wake(); });
+    while (!done || clips.length) {
       if (play.abort.signal.aborted || state.stopped) break;
-      setPhase('Готовлю голосовой ответ');
-      const { value, error } = await next;
+      if (!clips.length) {
+        setPhase('Готовлю голосовой ответ');
+        await new Promise<void>(resolve => { notify = resolve; });
+        continue;
+      }
+      const { buffer, error } = await clips.shift()!;
       if (play.abort.signal.aborted || state.stopped) break;
       if (error) throw error;
-      if (!value?.audio) throw Error('Озвучить ответ не удалось. Текст доступен в чате.');
-      const buffer = await decodeAudio(state.context, value.audio);
+      if (!buffer) throw Error('Озвучить ответ не удалось. Текст доступен в чате.');
       if (play.abort.signal.aborted || state.stopped) break;
       const source = state.context.createBufferSource();
       const analyser = state.context.createAnalyser();
@@ -128,7 +128,6 @@ export function useVoiceChat(options: Options) {
       source.buffer = buffer;
       source.connect(analyser).connect(state.output);
       setPhase('Отвечаю');
-      next = parts[index + 1] ? synthesize(parts[index + 1]) : undefined;
       await new Promise<void>((resolve, reject) => {
         const abort = () => finish();
         const watchdog = window.setTimeout(() => {
@@ -148,30 +147,20 @@ export function useVoiceChat(options: Options) {
         }
         source.onended = () => finish();
         play.abort.signal.addEventListener('abort', abort, { once: true });
-        source.start(); animate();
+        source.start(); latest.current.onSpeechStart(); animate();
       });
     }
+    play.abort.signal.removeEventListener('abort', wake);
+    await synthesis;
+    if (failure && !play.abort.signal.aborted) throw failure;
   }
 
   async function answerInCall(state: VoiceRuntime, turn: AbortController, send: (preview: (text: string) => void, status: (text: string) => void) => Promise<string | undefined>) {
-    let prefix = '';
-    let firstPart: Promise<void> | undefined;
-    const answer = await send(preview => {
-      if (turn.signal.aborted || state.stopped || firstPart) return;
-      firstPart = say(preview, state).catch(error => {
-        prefix = '';
-        if (!turn.signal.aborted && error.name !== 'AbortError') latest.current.report(error.message);
-      });
-      prefix = preview;
-    }, status => {
-      if (turn.signal.aborted || state.stopped || firstPart) return;
-      // A progress message never becomes part of the answer or blocks its playback.
-      void say(status, state).catch(() => {});
-    });
-    await firstPart;
+    // Text can stream immediately. Speech uses the completed answer in one audio
+    // connection, so a short preview cannot become a disconnected first sentence.
+    const answer = await send(() => {}, () => {});
     if (answer && !turn.signal.aborted && !state.stopped) {
-      const rest = answer.startsWith(prefix) ? answer.slice(prefix.length) : (prefix ? '' : answer);
-      if (rest.trim()) await say(rest, state);
+      await say(answer, state);
     }
   }
 

@@ -1,0 +1,86 @@
+{
+  "date": "2026-11-20",
+  "url": "https://decision-contour.vercel.app",
+  "hosting": {
+    "uiAndApi": "Vercel, Node.js 24",
+    "speech": "ModelScope, free CPU 2 vCPU / 16 GB",
+    "authorComputerRequired": false,
+    "paidPlanSelected": false
+  },
+  "publicAccess": {
+    "status": 200,
+    "loginRequired": false,
+    "apiKeyRequiredByJury": false,
+    "originRejected": 403
+  },
+  "health": {
+    "local": false,
+    "ollama": false,
+    "modelLoaded": false,
+    "online": true,
+    "speech": true,
+    "synthesis": true,
+    "voiceLoading": false,
+    "gate": false
+  },
+  "speech": {
+    "syntheticRecording": true,
+    "physicalMicUserFeedback": "Voice heard; pauses reported between phrases. Prefetch fix deployed; repeat feedback pending.",
+    "engine": "silero",
+    "speaker": "eugene",
+    "sampleRate": 48000,
+    "firstTrial": {
+      "ttsSeconds": 3.72,
+      "conversationAsrSeconds": 1.09,
+      "dictationSeconds": 19.11
+    },
+    "secondTrial": {
+      "ttsSeconds": 2.48,
+      "conversationAsrSeconds": 1.27,
+      "dictationSeconds": 22.81
+    }
+  },
+  "materials": {
+    "image": {
+      "seconds": 3.603,
+      "valuesVerified": [
+        120,
+        48,
+        40,
+        150,
+        45,
+        30
+      ]
+    },
+    "publicLink": {
+      "seconds": 14.794,
+      "url": "https://vats.megafon.ru/missed_calls_control"
+    },
+    "countsToRatio": {
+      "model": "GigaChat-3-Ultra",
+      "seconds": 36.299,
+      "values": [
+        40,
+        30,
+        28
+      ],
+      "charts": 1,
+      "source": "examples/studio-retention/cohorts.csv",
+      "technicalValidation": {
+        "missing": [],
+        "unsupportedNumbers": [],
+        "verifiedExcerpts": 0,
+        "measurements": 1,
+        "status": "proposal"
+      }
+    }
+  },
+  "failuresAndLimits": [
+    "An early trial showed raw counts instead of the requested ratio; calculation and chart selection were corrected.",
+    "One concurrent model trial received GigaChat 429 during research planning; the report remained a draft. Rate/availability limits remain.",
+    "Generated communication copy and metric definitions require human review; see the retained example notes.",
+    "Qwen dictation is slow on the free CPU.",
+    "Hosting cold starts and uptime are not guaranteed.",
+    "Cloud browser state does not replace transferable local case checkpoints or a background monitor."
+  ]
+}

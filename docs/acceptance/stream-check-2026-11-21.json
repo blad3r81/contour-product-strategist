@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-21",
+  "url": "https://decision-contour.vercel.app",
+  "publicAccess": true,
+  "waveStream": {
+    "clips": [
+      { "milliseconds": 6560, "durationSeconds": 6.55, "bytes": 628844 },
+      { "milliseconds": 9932, "durationSeconds": 7.2, "bytes": 691244 }
+    ],
+    "deliveryFitsPlayback": true
+  },
+  "compressedStream": {
+    "codec": "MP3",
+    "bitrateKbps": 128,
+    "sampleRate": 48000,
+    "clips": [
+      { "milliseconds": 5405, "durationSeconds": 6.55, "bytes": 105260 },
+      { "milliseconds": 6550, "durationSeconds": 7.2, "bytes": 115628 }
+    ],
+    "deliveryFitsPlayback": true,
+    "textDeltas": 4,
+    "firstTextDeltaMs": 1718
+  },
+  "browserObserved": [
+    "Incremental text was visible as the partial phrase 'Сравни ко' before the completed answer.",
+    "A text question sent during a muted voice call reached the browser playback state 'Отвечаю'.",
+    "The call returned to 'Микрофон выключен' after playback and ended correctly.",
+    "Hero example moved inside the left column below both buttons; narrow viewport has no horizontal overflow."
+  ],
+  "boundaries": [
+    "Separate runs: latency differences are observations, not an isolated causal benchmark.",
+    "MP3 is lossy transport; source synthesis model and sample rate are unchanged.",
+    "HTTP delivery and browser state do not certify subjective sound quality or every microphone.",
+    "Initial model and synthesis latency, free hosting cold starts, and provider limits remain."
+  ]
+}

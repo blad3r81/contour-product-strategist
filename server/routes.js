@@ -8,6 +8,7 @@ import { tableReview } from './review.js';
 import { calculateRatio, planResearch, ratioCandidates } from './research.js';
 import { caseMemory, readCase, saveCase } from './cases.js';
 import { persistConversation } from './conversation.js';
+import { demoSession, publicDemo, sameOrigin, withinBurst } from './demo-access.js';
 
 const instructions = () => readFile(new URL('../agent/instructions.md', import.meta.url), 'utf8');
 const limit = 4_000_000;
@@ -92,7 +93,7 @@ async function requestVoice(action, data, signal, milliseconds, local) {
   const timeout = AbortSignal.timeout(milliseconds);
   const response = await fetch(`${voiceUrl.replace(/\/$/, '')}/${action}`, {
     method: 'POST', signal: AbortSignal.any([signal, timeout]), headers: {
-      'Content-Type': 'application/json', ...(process.env.QWEN_VOICE_KEY ? { Authorization: `Bearer ${process.env.QWEN_VOICE_KEY}` } : {}),
+      'Content-Type': 'application/json', ...(process.env.QWEN_VOICE_KEY ? { 'x-contour-service-key': process.env.QWEN_VOICE_KEY } : {}),
     }, body: JSON.stringify(data),
   }).catch(() => {
     if (timeout.aborted) throw Error(action === 'speak'
@@ -106,7 +107,7 @@ async function requestVoice(action, data, signal, milliseconds, local) {
 
 async function voice(action, data, signal, local) {
   if (action === 'transcribe') return requestVoice(action, data, signal, data.speechOnly === true ? 10000 : 150000, local);
-  if (!local || configuredVoiceService(action)) return requestVoice(action, data, signal, 45000, local);
+  if (!local || configuredVoiceService(action)) return requestVoice(action, { ...data, fast: process.env.CONTOUR_REMOTE_TTS === 'silero' || data.fast === true }, signal, 45000, local);
   const payload = { text: data.text, prepared: data.text === callGreeting };
   if (process.env.CONTOUR_LOCAL_TTS !== 'ryan') {
     return requestVoice(action, { ...payload, fast: true }, signal, 12000, local);
@@ -117,6 +118,28 @@ async function voice(action, data, signal, local) {
     if (signal.aborted) throw error;
     return requestVoice(action, { ...payload, fast: true }, signal, 12000, local);
   }
+}
+
+async function streamVoice(data, signal, local, res) {
+  if (!Array.isArray(data.parts) || !data.parts.length || data.parts.length > 16 || data.parts.some(part => typeof part !== 'string' || !part.trim() || part.length > 440) || data.parts.join(' ') !== data.text) throw Error('Неверные фрагменты озвучки.');
+  const headers = () => {
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store, no-transform');
+    res.setHeader('X-Accel-Buffering', 'no');
+  };
+  if (!local && process.env.CONTOUR_VOICE_STREAM === '1') {
+    const response = await fetch(`${voiceService('speak', false).replace(/\/$/, '')}/speak-stream`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-contour-service-key': process.env.QWEN_VOICE_KEY },
+      body: JSON.stringify({ parts: data.parts }), signal: AbortSignal.any([signal, AbortSignal.timeout(90000)]),
+    });
+    if (!response.ok || !response.body) throw Error('Поток озвучки сейчас недоступен. Полный ответ есть в чате.');
+    headers();
+    for await (const chunk of response.body) res.write(chunk);
+    return res.end();
+  }
+  headers();
+  for (const text of data.parts) res.write(`${JSON.stringify(await voice('speak', { text }, signal, local))}\n`);
+  return res.end(`${JSON.stringify({ done: true })}\n`);
 }
 
 function configuredVoiceService(action) {
@@ -138,7 +161,7 @@ function voiceService(action, local) {
 
 const callGreeting = 'Здравствуйте! Какую продуктовую задачу разберём?';
 
-async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) {
+async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus, onText) {
   const started = Date.now();
   const prompt = typeof data.prompt === 'string' ? data.prompt.trim() : '';
   if (!prompt || prompt.length > 80000) throw Error('Введите запрос до 80 000 символов.');
@@ -239,6 +262,10 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) 
       const matching = charts.filter(chart => chart.name !== table.name || chart.label !== calculated.mapping.rate);
       charts.splice(0, charts.length, ...matching);
     }
+    if (calculated.valid && calculated.chart && /график|диаграмм|тренд|динамик|визуализ/i.test(prompt)) {
+      const matching = charts.filter(chart => chart.name !== table.name || (calculation.rate !== -1 && chart.label !== calculated.mapping.rate));
+      charts.splice(0, charts.length, ...matching, { ...calculated.chart, name: table.name });
+    }
     actions.push({ tool: 'calculate_ratio', source: table.id, status: calculated.valid ? 'done' : 'error', detail: calculated.text, mapping: calculated.mapping });
   }
   if (reviewingData) {
@@ -246,14 +273,14 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) 
     if (candidates.length === 1) applyCalculation(candidates[0]);
   }
   let researchPlan;
-  const needsResearchPlan = !reviewingData && !asksCapabilities && (research || needsStrategy(prompt)) && sources.some(source => !source.error);
+  const needsResearchPlan = !reviewingData && !asksCapabilities && (research || needsStrategy(prompt) || tables.length > 0 && /дол[яиюе]|процент|конверс|отношени/i.test(prompt)) && sources.some(source => !source.error);
   if (needsResearchPlan) {
     onProgress?.('Выбираю вопросы исследования и расчёты…');
     try {
       researchPlan = await planResearch(prompt, sources, tables, local, signal);
       actions.push({ tool: 'research_plan', status: researchPlan.valid ? 'done' : 'incomplete', detail: 'Модель выбрала вопросы исследования и доступные проверки.', questions: researchPlan.questions });
       const candidates = ratioCandidates(tables);
-      if (!researchPlan.calculations.length && candidates.length === 1) {
+      if (!researchPlan.calculations.length && candidates.length === 1 && candidates[0].rate !== -1) {
         researchPlan.calculations = candidates;
         researchPlan.valid = researchPlan.questions.length >= 2;
         actions.push({ tool: 'repair_tool_selection', status: 'done', detail: 'Модель пропустила расчёт. Инструмент нашёл единственную пару столбцов, согласованную со всеми строками. Выбранные определения показаны в журнале.' });
@@ -266,6 +293,12 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) 
       actions.push({ tool: 'research_plan', status: 'error', detail: error.message });
     }
   }
+  const requestedRatioChart = tables.length > 0 && /дол[яиюе]|процент|конверс/i.test(prompt) && /график|диаграмм|визуализ/i.test(prompt);
+  if (requestedRatioChart) {
+    const percentageCharts = charts.filter(chart => /%|дол[яиюе]|процент|конверс/i.test(chart.label));
+    charts.splice(0, charts.length, ...percentageCharts);
+  }
+  const missingRatioChart = requestedRatioChart && !charts.length;
   const decision = Object.fromEntries(Object.entries(data.decision || saved?.state.decision || {}).filter(([, value]) => typeof value === 'string' && value.trim()).map(([key, value]) => [key, value.slice(0, 3000)]));
   const materialsMs = Date.now() - started;
   const project = (Object.keys(decision).length ? `\n\nТекущее решение проекта:\n${JSON.stringify(decision)}` : '') +
@@ -347,7 +380,7 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) 
     result = structured ? await generateStrategy(prompt, modelContext, useHistory.slice(-2), plan, local, generationSignal, onProgress, images) : await complete(messages, images, local, generationSignal, maxTokens, preview, onProgress && (() => {
       firstTokenMs = Date.now() - modelStart;
       if (analysis || coldLocalModel) onProgress(analysis ? 'Модель формирует разбор…' : 'Модель формирует ответ…');
-    }));
+    }), undefined, !requiresReview ? onText : undefined);
   } catch (error) {
     if (signal.aborted || (!sources.length && !structured)) throw error;
     actions.push({ tool: 'generate_answer', status: 'error', detail: error.message });
@@ -459,6 +492,7 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) 
   if (sources.some(source => source.name?.match(/\.(csv|xlsx)$/i) && source.text?.includes('Пропущено звонков')) && /\d+\s+(?:человек|клиент)/i.test(result.text)) {
     result.warning = [result.warning, 'Таблица считает звонки. Если в ответе указано число людей или клиентов, его нужно подтвердить отдельными данными.'].filter(Boolean).join(' ');
   }
+  if (missingRatioChart) result.warning = [result.warning, 'Запрошенный график доли не построен: расчёт не завершён или определения числителя и знаменателя требуют уточнения. График исходных количеств не заменяет долю.'].filter(Boolean).join(' ');
   if (researchPlan?.usage) {
     result.usage ??= {};
     for (const key of ['prompt_tokens', 'completion_tokens', 'total_tokens']) {
@@ -494,6 +528,7 @@ async function chat(data, local, signal, onPreview, onProgress, onSpeechStatus) 
 
 export async function route(action, req, res, local = false) {
   if (action === 'status') {
+    if (!local) demoSession(req, res, true);
     const ollama = local && await fetch('http://127.0.0.1:11434/api/tags', { signal: AbortSignal.timeout(2000) })
       .then(async response => response.ok && (await response.json()).models.some(item => item.name === localModel())).catch(() => false);
     const health = async action => {
@@ -504,12 +539,27 @@ export async function route(action, req, res, local = false) {
       } catch { return false; }
     };
     const [asr, tts, modelLoaded] = await Promise.all([health('transcribe'), health('speak'), ollama && localModelLoaded()]);
-    return reply(res, 200, { local, ollama, modelLoaded, online: usesOnlineModel(local), speech: Boolean(asr?.ready ?? asr?.ok), synthesis: Boolean(tts?.ready ?? tts?.ok), voiceLoading: Boolean(asr?.ok && asr.ready === false || tts?.ok && tts.ready === false), gate: !local && Boolean(process.env.CONTOUR_ACCESS_CODE) });
+    return reply(res, 200, { local, ollama, modelLoaded, online: usesOnlineModel(local), speech: Boolean(asr?.ready ?? asr?.ok), synthesis: Boolean(tts?.ready ?? tts?.ok), voiceLoading: Boolean(asr?.ok && asr.ready === false || tts?.ok && tts.ready === false), gate: !local && !publicDemo() && Boolean(process.env.CONTOUR_ACCESS_CODE) });
   }
   if (!['chat', 'transcribe', 'speak'].includes(action) && !(local && ['warm', 'case'].includes(action))) return reply(res, 404, { error: 'Команда не найдена.' });
   if (req.method !== 'POST') return reply(res, 405, { error: 'Нужен POST запрос.' });
-  if (!local && !process.env.CONTOUR_ACCESS_CODE) return reply(res, 503, { error: 'Доступ к моделям ещё не настроен на сервере. Используйте локальный запуск.' });
-  if (!local && !authorized(req)) return reply(res, 401, { error: 'Введите код доступа к агенту.' });
+  if (!local && publicDemo()) {
+    if (!sameOrigin(req)) return reply(res, 403, { error: 'Откройте диалог на сайте сервиса.' });
+    const session = demoSession(req, res);
+    if (!session) return reply(res, 401, { error: 'Обновите страницу, чтобы начать сеанс.' });
+    if (!withinBurst(session, action)) return reply(res, 429, { error: 'Слишком много запросов. Подождите минуту.' });
+    if (action === 'chat') {
+      try {
+        const gateway = new URL(voiceService('transcribe', false));
+        gateway.pathname = gateway.pathname.replace(/\/asr\/?$/, '') + '/quota';
+        const quota = await fetch(gateway, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-contour-service-key': process.env.QWEN_VOICE_KEY }, body: JSON.stringify({ session }), signal: AbortSignal.timeout(8000) });
+        if (!quota.ok) return reply(res, quota.status === 429 ? 429 : 503, { error: quota.status === 429 ? 'Бесплатный лимит демонстрации исчерпан. Попробуйте завтра.' : 'Демонстрационный сервер запускается. Попробуйте чуть позже.' });
+      } catch { return reply(res, 503, { error: 'Демонстрационный сервер запускается. Попробуйте чуть позже.' }); }
+    }
+  } else if (!local) {
+    if (!process.env.CONTOUR_ACCESS_CODE) return reply(res, 503, { error: 'Доступ к моделям ещё не настроен на сервере. Используйте локальный запуск.' });
+    if (!authorized(req)) return reply(res, 401, { error: 'Введите код доступа к агенту.' });
+  }
   if (!local && action !== 'chat' && !(configuredVoiceService(action) && process.env.QWEN_VOICE_KEY)) return reply(res, 503, { error: 'Настройте удалённый голосовой сервис или используйте локальный запуск.' });
   const abort = new AbortController();
   res.once('close', () => abort.abort());
@@ -543,12 +593,13 @@ export async function route(action, req, res, local = false) {
       res.setHeader('Cache-Control', 'no-store, no-transform');
       res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
       const emit = event => res.write(`${JSON.stringify(event)}\n`);
-      const result = await finish(await chat(data, local, abort.signal, preview => emit({ preview }), progress => emit({ progress }), data.spoken ? speechStatus => emit({ speechStatus }) : undefined));
+      const result = await finish(await chat(data, local, abort.signal, preview => emit({ preview }), progress => emit({ progress }), data.spoken ? speechStatus => emit({ speechStatus }) : undefined, delta => emit({ delta })));
       emit({ result });
       return res.end();
     }
     if (action === 'transcribe' && (typeof data.audio !== 'string' || data.audio.length > 3_950_000)) throw Error('Аудиофрагмент слишком большой.');
     if (action === 'speak' && (typeof data.text !== 'string' || data.text.length > 2200)) throw Error('Фрагмент озвучки слишком большой.');
+    if (action === 'speak' && data.stream === true) return await streamVoice(data, abort.signal, local, res);
     return reply(res, 200, await voice(action, data, abort.signal, local));
   } catch (error) {
     if (abort.signal.aborted) return;

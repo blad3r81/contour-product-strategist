@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { demoSession, publicDemo, sameOrigin, withinBurst } from '../server/demo-access.js';
+
+process.env.CONTOUR_PUBLIC_DEMO = '1';
+process.env.CONTOUR_SESSION_SECRET = 'test-only-secret-with-at-least-32-characters';
+assert.equal(publicDemo(), true);
+let cookie;
+const res = { setHeader: (_name, value) => { cookie = value; } };
+const id = demoSession({ headers: {} }, res, true);
+assert.match(cookie, /HttpOnly; Secure; SameSite=Strict/);
+const savedCookie = cookie.split(';')[0];
+assert.equal(demoSession({ headers: { cookie: savedCookie } }, res), id);
+assert.equal(demoSession({ headers: { cookie: savedCookie + 'x' } }, res), null);
+assert.equal(demoSession({ headers: { cookie: savedCookie.replace(/\.[^.]+$/, '.ы'.repeat(43)) } }, res), null);
+assert.equal(sameOrigin({ headers: { origin: 'https://example.com', host: 'example.com', 'sec-fetch-site': 'same-origin' } }), true);
+assert.equal(sameOrigin({ headers: { origin: 'https://attacker.com', host: 'example.com' } }), false);
+assert.equal(sameOrigin({ headers: { host: 'example.com' } }), false);
+for (let i = 0; i < 10; i++) assert.equal(withinBurst(id, 'chat'), true);
+assert.equal(withinBurst(id, 'chat'), false);
+assert.equal(withinBurst('another-user', 'chat'), true);
+console.log('PASS. Signed anonymous sessions, tamper rejection, origin checks, burst limits.');

@@ -344,7 +344,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         key = os.getenv('QWEN_VOICE_KEY')
-        if key and not hmac.compare_digest(self.headers.get('Authorization', ''), f'Bearer {key}'):
+        supplied = self.headers.get('x-contour-service-key', '')
+        legacy = self.headers.get('Authorization', '')
+        if key and not (hmac.compare_digest(supplied.encode(), key.encode()) or hmac.compare_digest(legacy.encode(), f'Bearer {key}'.encode())):
             return self.respond(401, {'error': 'Неверный ключ голосового сервиса.'})
         if self.path != self.server.action:
             return self.respond(404, {'error': 'Команда не найдена.'})
