@@ -12,7 +12,7 @@ if (step !== '00-intake') {
   const calculation = await fs.readFile(`${root}materials/calculations.md`, 'utf8').catch(() => '');
   if (calculation) files.push({ name: 'calculations.md', base64: Buffer.from(calculation).toString('base64') });
 }
-if (step === '06-review') files.push({ name: 'strategy.md', base64: (await fs.readFile(`${root}strategy.md`)).toString('base64') });
+if (step === '06-review') files.push({ name: 'strategy.md', base64: (await fs.readFile(`${root}materials/strategy-for-review.md`)).toString('base64') });
 const decision = step === '07-resume' ? {
   choice: 'Учебный выбор: проверить дешёвый семейный сигнал, не масштабировать до доказательств',
   owner: 'Роль: руководитель продукта учебного оператора',

@@ -44,6 +44,11 @@ def inline(s):
 
 def para(s,style='BodyText'): return Paragraph(inline(s),styles[style])
 
+class EvidenceImage(Image):
+    def drawOn(self,c,x,y,_sW=0):
+        super().drawOn(c,x,y,_sW)
+        c.linkURL('https://decision-contour.vercel.app/submission/screenshots/'+Path(self.filename).name,(x,y,x+self.drawWidth,y+self.drawHeight),relative=0,thickness=0)
+
 class Architecture(Flowable):
     def __init__(self): super().__init__();self.width=505;self.height=195
     def draw(self):
@@ -89,15 +94,26 @@ def parse_md(path):
         if im:
             file=(path.parent/im[2]).resolve()
             if not file.exists():raise FileNotFoundError(file)
-            pic=Image(str(file));pic.drawWidth=505;pic.drawHeight=505*pic.imageHeight/pic.imageWidth
+            pic=EvidenceImage(str(file),hAlign='LEFT');pic.drawWidth=505;pic.drawHeight=505*pic.imageHeight/pic.imageWidth
             if pic.drawHeight>390:pic.drawWidth*=390/pic.drawHeight;pic.drawHeight=390
-            out.extend([pic,para(im[1],'Caption')]);i+=1;continue
+            block=[pic,para(im[1]+' · Нажмите снимок для просмотра оригинала.','Caption')]
+            if out and isinstance(out[-1],Paragraph) and out[-1].getPlainText().startswith(('Архитектура, процессы','Модели, сервисы','Время, расходы','Возможности и ограничения')):
+                block.insert(0,out.pop())
+            while out and isinstance(out[-1],Paragraph) and out[-1].style.name.startswith('Heading'):
+                block.insert(0,out.pop())
+            after=i+1
+            while after<len(lines) and not lines[after].strip():after+=1
+            if after<len(lines):
+                note=lines[after].strip()
+                if len(note)<1500 and note.startswith(('**Что видно','**Подтверждение','Снимок ','На снимке ','Этот снимок ')):
+                    block.append(para(note));i=after
+            out.append(KeepTogether(block))
+            i+=1;continue
         head=re.match(r'^(#{1,6})\s+(.+)',s)
         if head:
             level=len(head[1]);title=head[2]
             if level==1:out.append(para(title,'Heading1'))
             elif level==2:
-                if title.startswith('Часть '):out.append(PageBreak())
                 out.append(para(title,'Heading1'))
             else:out.append(para(title,'Heading2'))
             if title.startswith('1. Архитектура'):out.append(Architecture())
