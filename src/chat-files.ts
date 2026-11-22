@@ -20,9 +20,12 @@ async function fileRequest<T>(mode: IDBTransactionMode, perform: (store: IDBObje
   } finally { db.close(); }
 }
 
-export const storeFile = (project: string, file: File) => fileRequest('readwrite', store => store.put(file, `${project}:${file.name}`));
-export const removeFile = (project: string, name: string) => fileRequest('readwrite', store => store.delete(`${project}:${name}`));
+export const storeFile = (project: string, file: File) => fileRequest('readwrite', store => { store.delete(`${project}:${file.name}:video`); return store.put(file, `${project}:${file.name}`); });
+export const removeFile = (project: string, name: string) => fileRequest('readwrite', store => { store.delete(`${project}:${name}:video`); return store.delete(`${project}:${name}`); });
 export const loadFile = (project: string, name: string) => fileRequest<File | undefined>('readonly', store => store.get(`${project}:${name}`));
+export type VideoEvidence = { name: string; durationSeconds: number; sampledSeconds: number[]; audio: false };
+export const storeVideoEvidence = (project: string, name: string, video: VideoEvidence) => fileRequest('readwrite', store => store.put(video, `${project}:${name}:video`));
+export const loadVideoEvidence = (project: string, name: string) => fileRequest<VideoEvidence | undefined>('readonly', store => store.get(`${project}:${name}:video`));
 
 export function base64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {

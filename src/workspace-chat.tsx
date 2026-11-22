@@ -3,7 +3,8 @@ import { ProgressiveAnswer } from './progressive-answer';
 import type { CaseSource } from './showcase';
 import { AgentVisual } from './agent-visuals';
 import { scenarios } from './landing';
-import { base64, loadFile, removeFile, storeFile } from './chat-files';
+import { base64, loadFile, loadVideoEvidence, removeFile, storeFile } from './chat-files';
+import { isVideo, videoFrames } from './video-frames';
 import { useVoiceChat } from './voice-chat';
 import './workspace-chat.css';
 
@@ -137,7 +138,9 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
     try {
       const stored = (await Promise.all(p.files.map(name => loadFile(id, name)))).filter((file): file is File => Boolean(file));
       if (stored.reduce((bytes, file) => bytes + file.size, 0) > 2_650_000) throw Error('Суммарный размер файлов превышает 2,65 МБ. Удалите часть вложений.');
-      const files = await Promise.all(stored.map(async file => ({ name: file.name, base64: await base64(file) })));
+      if (stored.filter(file => isVideo(file.name) || /\.(jpe?g|png|webp)$/i.test(file.name)).length > 1) throw Error('За один запрос можно разобрать одно видео или одно изображение.');
+      const files = await Promise.all(stored.map(async file => isVideo(file.name) ? videoFrames(file, signal) : ({ name: file.name, base64: await base64(file), video: await loadVideoEvidence(id, file.name) })));
+      if (files.reduce((size, file) => size + file.base64.length, 0) > 3_540_000) throw Error('Подготовленные материалы превышают размер запроса. Удалите часть вложений.');
       const history = p.messages.map(normalize);
       const filesOnly = /(?:только|исключительно).{0,40}(?:прилож|влож|файл)|без внешн.{0,20}источ/i.test(prompt);
       const recentUrls = history.slice(-8).reverse().flatMap(message => message.sources?.flatMap(source => source.url && !source.error ? [source.url] : []) || []);
@@ -215,6 +218,7 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
       if (names.size > 5 || selected.some(file => file.size > 2_000_000)) throw Error('Можно прикрепить до пяти файлов по 2 МБ каждый.');
       await Promise.all(selected.map(file => storeFile(id, file)));
       change({ ...current.current, files: [...new Set([...current.current.files, ...selected.map(file => file.name)])] });
+      if (selected.some(file => isVideo(file.name))) setNotice('Видео: до 60 секунд, разбор четырёх кадров с таймкодами. Звуковая дорожка не обрабатывается.');
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось сохранить файлы.'); }
   }
 
@@ -253,7 +257,7 @@ export function WorkspaceChat({ project, onChange }: { project: Project; onChang
         }}>
           {health?.gate && <label className="chat-access">Код доступа<input type="password" value={access} autoComplete="off" onChange={event => { const value = event.target.value; setAccess(value); sessionStorage.setItem('contour-access', value); }}/></label>}
           {!!project.files.length && <ul className="composer-attachments">{project.files.map(name => <li key={name}><span>{name}</span><button type="button" aria-label={`Удалить ${name}`} onClick={() => void removeFile(id, name).then(() => change({ ...current.current, files: current.current.files.filter(file => file !== name) })).catch(() => setNotice('Не удалось удалить файл.'))}>×</button></li>)}</ul>}
-          <input type="file" hidden multiple accept=".pdf,.docx,.csv,.xlsx,.txt,.md,.srt,.vtt,.jpg,.jpeg,.png,.webp" id="files" onChange={event => { void attach(event.target.files); event.target.value = ''; }}/>
+          <input type="file" hidden multiple accept=".pdf,.docx,.csv,.xlsx,.txt,.md,.srt,.vtt,.jpg,.jpeg,.png,.webp,.mp4,.webm" id="files" onChange={event => { void attach(event.target.files); event.target.value = ''; }}/>
           <div className="composer-field">
             <textarea ref={inputRef} id="draft" aria-label="Запрос" rows={1} value={draft} maxLength={80000} onChange={event => saveDraft(event.target.value)} onKeyDown={event => {
               if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && window.matchMedia('(pointer:fine)').matches) {

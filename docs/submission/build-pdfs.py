@@ -131,7 +131,7 @@ def parse_md(path):
     return out
 
 def footer(c,doc):
-    c.saveState();c.setStrokeColor(colors.HexColor('#dfd9e5'));c.line(45,40,550,40);c.setFont('Body',8);c.setFillColor(colors.HexColor('#746a7b'));c.drawString(45,26,'КОНТУР РЕШЕНИЯ  /  Материалы для жюри  /  21.11.2026');c.drawRightString(550,26,str(doc.page));c.restoreState()
+    c.saveState();c.setStrokeColor(colors.HexColor('#dfd9e5'));c.line(45,40,550,40);c.setFont('Body',8);c.setFillColor(colors.HexColor('#746a7b'));c.drawString(45,26,'КОНТУР РЕШЕНИЯ  /  Материалы для жюри  /  22.11.2026');c.drawRightString(550,26,str(doc.page));c.restoreState()
 
 def build(name,title,subtitle,source):
     story=[Spacer(1,45),para('КОНТУР РЕШЕНИЯ','Heading2'),Spacer(1,25),para(title,'CoverTitle'),para(subtitle),Spacer(1,25)]

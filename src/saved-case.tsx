@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { base64, loadFile, storeFile } from './chat-files';
+import { base64, loadFile, loadVideoEvidence, storeFile, storeVideoEvidence, type VideoEvidence } from './chat-files';
 import { WorkspaceChat, type Project } from './workspace-chat';
 
 type Checkpoint = {
   revision: string;
   state: {
     stage: string; task: string; next: string; project: Project;
-    files?: { name: string; base64: string }[];
+    files?: { name: string; base64: string; video?: VideoEvidence }[];
     decision?: Record<string, string>;
   };
 };
@@ -34,6 +34,10 @@ export function SavedCase() {
       for (const file of checkpoint.state.files ?? []) {
         const bytes = Uint8Array.from(atob(file.base64), character => character.charCodeAt(0));
         await storeFile(next.id, new File([bytes], file.name));
+        if (file.video) {
+          await storeVideoEvidence(next.id, file.name, file.video);
+          next.files = next.files.map(name => name === file.video!.name ? file.name : name);
+        }
       }
       if (active) { current.current = checkpoint; setSaved(checkpoint); setProject(next); }
     }).catch(error => { if (active) setNotice(error.message); });
@@ -56,7 +60,7 @@ export function SavedCase() {
       const files = await Promise.all(next.files.map(async name => {
         const file = await loadFile(next.id, name);
         if (!file) throw Error(`Материал «${name}» не найден. Прикрепите его снова.`);
-        return { name, base64: await base64(file) };
+        return { name, base64: await base64(file), video: await loadVideoEvidence(next.id, name) };
       }));
       const result = await caseRequest({
         operation: 'save', id, revision: latest.revision,

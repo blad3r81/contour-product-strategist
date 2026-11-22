@@ -13,5 +13,8 @@ try {
  assert.match(result.error,/Анализ по непрочитанным материалам остановлен/);
  assert.equal(result.text,undefined,'Ошибку нельзя выдавать за содержательный ответ модели.');
  }
+ const invalidVideo=await fetch(`http://127.0.0.1:${server.address().port}/api/chat`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:'Прочитай кадры.',files:[{name:'frames.jpg',base64:'aA==',video:{name:'clip.mp4',durationSeconds:61,sampledSeconds:[0,20,40,60],audio:false}}]})});
+ assert.equal(invalidVideo.status,422,'Out-of-bounds video metadata must stop before inference.');
+ assert.equal((await invalidVideo.json()).text,undefined);
  console.log('PASS. Unread full-document and all-unread requests stop before model inference.');
 }finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

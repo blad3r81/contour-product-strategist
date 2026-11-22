@@ -35,7 +35,7 @@ async function storeMaterials(checkpoints, files) {
       await writeFile(temporary, bytes, { flag: 'wx' });
       await rename(temporary, output);
     }
-    stored.push({ name: item.name, file, sha256: hash, bytes: bytes.length });
+    stored.push({ name: item.name, file, sha256: hash, bytes: bytes.length, ...(item.video ? { video: item.video } : {}) });
   }
   return stored;
 }
